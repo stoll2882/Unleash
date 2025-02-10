@@ -8,11 +8,30 @@
 import SwiftUI
 
 struct ExpandableTextView: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-    }
-}
+    let text: String
+    let previewCharacterLimit: Int
+    @State private var isExpanded = false
 
-#Preview {
-    ExpandableTextView()
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text(isExpanded ? text : previewText)
+                .lineLimit(isExpanded ? nil : 1)
+                .foregroundColor(.primary)
+                .font(.system(size: 12))
+                .animation(.easeInOut, value: isExpanded)
+
+            if text.count > previewCharacterLimit {
+                Button(action: { isExpanded.toggle() }) {
+                    Text(isExpanded ? "Show Less" : "Show More")
+                        .font(.caption)
+                        .foregroundColor(Color(AppConfig.main_bright_pink))
+                }
+            }
+        }
+    }
+
+    private var previewText: String {
+        let trimmedText = text.prefix(previewCharacterLimit)
+        return trimmedText + (text.count > previewCharacterLimit ? "..." : "")
+    }
 }

@@ -8,11 +8,15 @@
 import Foundation
 
 class WorkoutProgram: Identifiable, ObservableObject {
-    var numWeeks: Int
-    var workoutWeeks: [WorkoutWeek]
+//    var trainingBlocks: [TrainingBlock]
+    var trainingWeeks: [WorkoutWeek]
     
-    init(numWeeks: Int, workoutWeeks: [WorkoutWeek]) {
-        self.numWeeks = numWeeks
-        self.workoutWeeks = workoutWeeks
+    init(trainingWeeks: [WorkoutWeek]) {
+        self.trainingWeeks = trainingWeeks
     }
+    
+//    init(trainingBlocks: [TrainingBlock]) {
+//        self.numBlocks = trainingBlocks.count
+//        self.trainingBlocks = trainingBlocks
+//    }
 }

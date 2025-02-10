@@ -6,15 +6,23 @@
 //
 
 import SwiftUI
+import SwiftUI
+import FirebaseCore
+import FirebaseFirestore
+import FirebaseAuth
+import FirebaseStorage
 
 @main
 struct UnleashApp: App {
     let persistenceController = PersistenceController.shared
 
+    @StateObject private var firebaseManager = FirebaseManager()
+    @StateObject private var appDataStore = AppDataStorage()
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
-        }
+            WindowGroup {
+                SplashScreenView().environmentObject(firebaseManager).environmentObject(appDataStore)
+//                ContentView().environmentObject(firebaseManager).environmentObject(appDataStore)
+            }
     }
 }

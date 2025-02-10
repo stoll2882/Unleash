@@ -7,14 +7,17 @@
 
 import Foundation
 
-class UserExercise: Identifiable, ObservableObject {
-    var exercise: Exercise
-    var reps: Int
-    var weight: Double?
+class UserExercise: Exercise {
+    var exerciseName: String
+    var exerciseDescription: String
+    var exerciseVideoURL: String
+    var pastWeightScores: [Double]
     
-    init(exercise: Exercise, reps: Int, weight: Double? = nil) {
-        self.exercise = exercise
-        self.reps = reps
-        self.weight = weight
+    init(exerciseName: String, exerciseDescription: String, exerciseVideoURL: String, pastWeightScores: [Double], exerciseID: String, reps: String?, sets: String?, rpe: String?, rest: String?, exerciseGroupNumber: Int?, exerciseType: String?) {
+        self.exerciseName = exerciseName
+        self.exerciseDescription = exerciseDescription
+        self.exerciseVideoURL = exerciseVideoURL
+        self.pastWeightScores = pastWeightScores
+        super.init(exerciseID: exerciseID, exerciseType: exerciseType, reps: reps, sets: sets, rpe: rpe, rest: rest, exerciseGroupNumber: exerciseGroupNumber)
     }
 }
