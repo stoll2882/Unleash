@@ -15,7 +15,7 @@ struct ExpandableTextView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(isExpanded ? text : previewText)
-                .lineLimit(isExpanded ? nil : 1)
+                .lineLimit(isExpanded ? nil : 2)
                 .foregroundColor(.primary)
                 .font(.system(size: 12))
                 .animation(.easeInOut, value: isExpanded)
