@@ -16,14 +16,15 @@ struct DaySelectionTableView: View {
     
     var body: some View {
 //        Text("Week Number \(weekNumber)").bold().font(.system(size: 20))
-//            .foregroundStyle(Color(AppConfig.main_off_white))
+//            .foregroundStyle(Color(AppConfig.main_dark_brown))
         ScrollView(.vertical) {
             VStack {
                 ForEach(appDataStore.activeWorkoutProgram!.trainingWeeks[weekNumber - 1].workouts) { workout in
                     DayTableRow(workout: workout, weekNumber: weekNumber)
-                        .padding(.bottom, 120)
+                        .padding(.bottom, 110)
                 }
             }
         }
+        .ignoresSafeArea()
     }
 }

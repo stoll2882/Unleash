@@ -14,18 +14,18 @@ struct MainWelcomeView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            if appDataStore.activeWorkoutProgram != nil && !appDataStore.activeUser.isNull() { 
+            if appDataStore.activeWorkoutProgram != nil && !appDataStore.activeUser.isNull() {
                 NavigationView {
                     VStack {
                         ZStack {
                             Rectangle()
-                                .background(Color(AppConfig.main_neon_green))
-                                .foregroundStyle(Color(AppConfig.main_neon_green))
+                                .background(Color(AppConfig.main_background))
+                                .foregroundStyle(Color(AppConfig.main_background))
                                 .edgesIgnoringSafeArea(.all)
                                 .frame(width: geometry.size.width, height: 50)
-                            Image("UnleashLogoSmall")
+                            Image("UnleashOrange")
                                 .resizable()
-                                .frame(width: 200, height: 50)
+                                .frame(width: 250, height: 50)
                                 .padding(.horizontal, 50)
                         }
                         .frame(alignment: .top)
@@ -72,18 +72,23 @@ struct MainWelcomeView: View {
                         }
                         .background(content: {
                             // Background Image - Fills the entire screen
-                            Image("KarlieMainTall") // Replace with your image name in Assets.xcassets
+                            Image("KarlieMainColored") // Replace with your image name in Assets.xcassets
                                 .resizable()
                                 .scaledToFill()
+                                .frame(width: geometry.size.width - (40), height: geometry.size.height - 70)
                                 .cornerRadius(20)
+                                .clipped()
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 20)
 //                                .edgesIgnoringSafeArea(.all)
                         })
                         .frame(maxWidth: geometry.size.width - 40, alignment: .bottom)
                     }
                     .frame(width: geometry.size.width, height: geometry.size.height)
-                    .background(Color(AppConfig.main_neon_green))
+                    .background(Color(AppConfig.main_background))
                 }
-                .accentColor(Color(AppConfig.main_bright_pink))
+                .background(Color(AppConfig.main_background))
+                .accentColor(Color(AppConfig.main_neon_green))
             } else {
                 ProgressView()
             }

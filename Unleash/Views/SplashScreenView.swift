@@ -19,10 +19,10 @@ struct SplashScreenView: View {
             GeometryReader { geometry in
                 ZStack {
                     Rectangle()
-                        .background(Color(AppConfig.main_neon_green))
-                        .foregroundStyle(Color(AppConfig.main_neon_green))
+                        .background(Color(AppConfig.main_background))
+                        .foregroundStyle(Color(AppConfig.main_background))
                         .frame(width: geometry.size.width, height: geometry.size.height)
-                    Image("UnleashLogoSmall")
+                    Image("UnleashOrange")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 300, height: 80)

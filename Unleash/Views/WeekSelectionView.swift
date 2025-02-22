@@ -30,12 +30,12 @@ struct UnderlinePicker: View {
                     VStack {
                         Text("Week \(option)")
                             .bold()
-                            .foregroundColor(selection == option ? Color(AppConfig.main_orange) : .black)
+                            .foregroundColor(selection == option ? Color(AppConfig.main_neon_green) : Color(AppConfig.main_light_orange) )
                         if selection == option {
                             Spacer()
                             Rectangle()
-                                .background(Color(AppConfig.main_orange))
-                                .foregroundStyle(Color(AppConfig.main_orange))
+                                .background(Color(AppConfig.main_neon_green))
+                                .foregroundStyle(Color(AppConfig.main_neon_green))
                                 .frame(height: 5)
                         }
                         if selection != option {
@@ -68,7 +68,7 @@ struct WeekSelectionView: View {
     
     var body: some View {
         VStack {
-            Image("UnleashMintGreenBackground")
+            Image("UnleashOrange")
                 .resizable()
                 .frame(width: 280, height: 50)
                 .padding(.vertical, 5)
@@ -79,8 +79,8 @@ struct WeekSelectionView: View {
             .padding(.horizontal, 20)
             .background(alignment: .bottom) {
                 Rectangle()
-                    .background(Color(AppConfig.main_bright_pink))
-                    .foregroundStyle(Color(AppConfig.main_bright_pink))
+                    .background(Color(AppConfig.main_light_orange))
+                    .foregroundStyle(Color(AppConfig.main_light_orange))
                     .frame(height: 5)
                     .offset(y: -10)
             }
@@ -105,7 +105,7 @@ struct WeekSelectionView: View {
             }
             Spacer()
         }
-        .background(Color(AppConfig.main_mint_green))
+        .background(Color(AppConfig.main_background))
     }
 }
 
