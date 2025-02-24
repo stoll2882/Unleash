@@ -13,52 +13,66 @@ struct DayTableRow: View {
     
     @State var workout: Workout
     @State var weekNumber: Int
-         
+    
+    private func checkForCompletion() -> Bool {
+        let exerciseIds = Set((workout.exercises + workout.warmups + workout.cooldowns).map { "\($0.exerciseID)_week\(weekNumber)_day\(workout.dayNumber)" })
+        let historyIds = Set(appDataStore.activeUser.exerciseHistory.map { $0.id })
+        
+        return exerciseIds.isSubset(of: historyIds)
+    }
+    
     var body: some View {
-        GeometryReader { geometry in
-            NavigationLink(destination: WorkoutDayDetailView(workoutData: workout, weekNumber: weekNumber, dayNumber: workout.dayNumber)) {
-                ZStack {
-                    Rectangle()
-                        .stroke(Color(AppConfig.main_light_orange), lineWidth: 4)
-                        .background(Color(AppConfig.main_off_white))
-                        
+        NavigationLink(destination: WorkoutDayDetailView(workoutData: workout, weekNumber: weekNumber, dayNumber: workout.dayNumber)) {
+            HStack {
+                VStack {
                     HStack {
-                        VStack {
-                            HStack {
-                                Text("Day \(workout.dayNumber)").bold().font(.system(size: 30))
-                                    .foregroundStyle(Color(AppConfig.main_neon_green))
-                                Spacer()
-                            }
-                            HStack {
-                                Text(workout.focus!).bold().font(.system(size: 20))
-                                    .foregroundStyle(.black)
-                                Spacer()
-                            }
-                            HStack {
-                                Image(systemName: "timer")
-                                    .foregroundStyle(.black)
-                                Text("60 minutes").font(.system(size: 15))
-                                    .foregroundStyle(.black)
-                                Spacer()
-                            }
-                        }
+                        Text("Day \(workout.dayNumber)").bold()
+                            .foregroundStyle(Color(AppConfig.main_neon_green))
+                            .font(.custom("Nexa-Heavy", size: 40))
                         Spacer()
-                        VStack {
-                            Spacer()
-                            Image(systemName: "arrow.right")
-                                .resizable()
-                                .frame(width: 40, height: 30)
-                                .foregroundStyle(Color(AppConfig.main_dark_blue))
-                            Spacer()
-                        }
                     }
-                    .padding(20)
+                    .padding(.bottom, -10)
+                    HStack {
+                        Text(workout.focus!).bold()
+                            .foregroundStyle(.black)
+                            .font(.custom("Nexa-Heavy", size: 25))
+                        Spacer()
+                    }
+                    .padding(.bottom, -3)
+                    HStack {
+                        Image("Timer")
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                            .foregroundStyle(.black)
+                        Text("60 minutes").font(.custom("Nexa-ExtraLight", size: 20))
+                            .foregroundStyle(.black)
+                        Spacer()
+                    }
                 }
-                .padding(.horizontal, 10)
-//                .foregroundStyle(Color.black)
+                .frame(alignment: .leading)
+                .layoutPriority(1)
+                VStack {
+                    Spacer()
+                    if checkForCompletion() {
+                        Image("Complete")
+                            .resizable()
+                            .frame(width: 40, height: 40)
+                            .foregroundStyle(Color(AppConfig.main_dark_blue))
+                    } else {
+                        Image("Incomplete")
+                            .resizable()
+                            .frame(width: 40, height: 40)
+                            .foregroundStyle(Color(AppConfig.main_dark_blue))
+                    }
+                    Spacer()
+                }
+                .frame(width: 40, alignment: .trailing)
+                .layoutPriority(0)
             }
-            .accentColor(Color(AppConfig.main_bright_pink))
-            
+            .padding(15)
         }
+        .cornerRadius(20)
+        .background(Color(AppConfig.main_light_blue))
+        .padding(.horizontal, 10)
     }
 }

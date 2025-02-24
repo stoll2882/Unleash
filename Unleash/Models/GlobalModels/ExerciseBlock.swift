@@ -7,10 +7,10 @@
 
 import Foundation
 
-class ExerciseBlock: Identifiable, ObservableObject {
-    var exercises: [UserExercise]
-
-    init(exercises: [UserExercise]) {
-        self.exercises = exercises
-    }
-}
+//class ExerciseBlock: Identifiable, ObservableObject {
+//    var exercises: [UserExercise]
+//
+//    init(exercises: [UserExercise]) {
+//        self.exercises = exercises
+//    }
+//}

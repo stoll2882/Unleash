@@ -9,16 +9,19 @@ import SwiftUI
 import FirebaseFirestore
 
 struct ExerciseBlockView: View {
-    @State var exercise: UserExercise
+    @State var exercise: ProgramExercise
     @State var isPresentingVideo: Bool = false
     @EnvironmentObject var appDataStore: AppDataStorage
     @EnvironmentObject var firebaseManager: FirebaseManager
+    @State var loading: Bool = true
+    
+    @State var padding: Int
 
     @State private var selectedButtons: Set<Int> = []
     @State private var isShowingEntryView: Bool = false
     @State private var selectedSetIndex: SetIndexWrapper?
     @State private var numberOfSets: Int?
-    @State private var sets: [WorkoutSet] = []
+    @State private var mostRecentSets: [WorkoutSet] = []
     @State private var isExerciseComplete: Bool = false  // ✅ Store exercise completion
     
     var weekNumber: Int
@@ -26,197 +29,58 @@ struct ExerciseBlockView: View {
     
     @State private var activeSheet: SheetType?
     
-    private func loadExerciseData() {
-        let ref = firebaseManager.firestore.collection("users").document(appDataStore.activeUser.id)
-            .collection("exerciseHistory")
-            .document("\(exercise.exerciseID)_week\(weekNumber)_day\(dayNumber)")
-
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-
-        ref.getDocument { document, error in
-            guard let data = document?.data(), error == nil else {
-                print("Error fetching exercise data: \(error?.localizedDescription ?? "Unknown error")")
-                return
+    private func loadExerciseHistory() {
+        DispatchQueue.main.async {
+            if let setsString = exercise.sets, let firstChar = setsString.first, let setsCount = Int(String(firstChar)) {
+                self.numberOfSets = setsCount
+                self.mostRecentSets = (0..<setsCount).map { WorkoutSet(setIndex: $0) }
             }
-
-            if let fetchedSets = data["sets"] as? [[String: Any]] {
-                DispatchQueue.main.async {
-                    if self.sets.isEmpty {
-                        self.initializeSets()
+            
+            let allHistoryInstances: [ExerciseHistoryInstance] = appDataStore.getObjectsContainingID(from: appDataStore.activeUser.exerciseHistory, containing: exercise.exerciseID)
+            
+            // Filter out history instances that do not have a valid date
+            let filteredHistory = allHistoryInstances.filter { $0.dateCompleted != nil }
+            
+            // Sort by `dateCompleted`, placing the most recent first
+            let sortedHistory = filteredHistory.sorted { $0.dateCompleted! > $1.dateCompleted! }
+            
+            if exercise.exerciseName == "Band Pull Aparts" {
+                print("here")
+            }
+                        
+            // Return the sets from the most recent instance, or an empty array if none exist
+            let mostRecentInstance: ExerciseHistoryInstance? = sortedHistory.first
+            if let instanceToCheck = mostRecentInstance {
+                // Instance of exercise is completed already
+                if (instanceToCheck.exerciseId == exercise.exerciseID && instanceToCheck.weekNumber == weekNumber && instanceToCheck.dayNumber == dayNumber) {
+                    isExerciseComplete = instanceToCheck.completed!
+                    for index in 0..<instanceToCheck.sets!.count {
+                        mostRecentSets[index] = instanceToCheck.sets![index]
                     }
-
-                    for dict in fetchedSets {
-                        if let setIndex = dict["setIndex"] as? Int, setIndex < self.sets.count {
-                            let weight = dict["weight"] as? Double ?? self.sets[setIndex].weight
-                            let reps = dict["reps"] as? Int ?? self.sets[setIndex].reps
-                            let unit = dict["unit"] as? String ?? self.sets[setIndex].unit
-                            let week = dict["weekNumber"] as? Int ?? weekNumber
-                            let day = dict["dayNumber"] as? Int ?? dayNumber
-                            let completed = dict["completed"] as? Bool ?? self.sets[setIndex].completed
-                            let dateString = dict["dateCompleted"] as? String ?? "2000-01-01"
-                            let dateCompleted = dateFormatter.date(from: dateString) ?? Date()
-
-                            self.sets[setIndex] = WorkoutSet(
-                                setIndex: setIndex,
-                                weight: weight,
-                                reps: reps,
-                                unit: unit,
-                                week: week,
-                                day: day,
-                                dateCompleted: dateCompleted,
-                                completed: completed
-                            )
-                        }
+                // Exercise has been done before, but not same instance
+                } else {
+                    var smallerVal = numberOfSets!
+                    if instanceToCheck.sets!.count < smallerVal {
+                        smallerVal = instanceToCheck.sets!.count
                     }
-
-                    self.isExerciseComplete = data["completed"] as? Bool ?? false
+                    for index in 0..<smallerVal {
+                        mostRecentSets[index].weight = instanceToCheck.sets![index].weight
+                        mostRecentSets[index].reps = instanceToCheck.sets![index].reps
+                        mostRecentSets[index].unit = instanceToCheck.sets![index].unit
+                        mostRecentSets[index].setIndex = instanceToCheck.sets![index].setIndex
+                    }
                 }
             }
+            loading = false
         }
     }
 
     // Checks if all sets have been logged and marks exercise as complete
     private func updateExerciseCompletion(setIndex: Int, weight: Double, reps: Int, unit: String) {
-        sets[setIndex] = WorkoutSet(setIndex: setIndex, weight: weight, reps: reps, unit: unit)
-        
-        let completed = sets.allSatisfy { $0.weight != nil && $0.reps != nil }
-        self.isExerciseComplete = completed
-
-        let userRef = firebaseManager.firestore.collection("users").document(appDataStore.activeUser.id)
-        
-        let sessionRef = userRef
-            .collection("exerciseHistory")
-            .document("\(exercise.exerciseID)_week\(weekNumber)_day\(dayNumber)")
-
-        let fullHistoryRef = userRef
-            .collection("fullExerciseHistory")
-            .document(exercise.exerciseID)
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let dateCompleted = Date()
-        
         DispatchQueue.main.async {
-            let setsData = sets
-                .filter { $0.weight != nil && $0.reps != nil }
-                .map { [
-                    "setIndex": $0.setIndex,
-                    "weight": $0.weight,
-                    "reps": $0.reps,
-                    "unit": $0.unit,
-                    "weekNumber": weekNumber,
-                    "dayNumber": dayNumber,
-                    "completed": true,
-                    "dateCompleted": dateCompleted
-                ]}
-            sessionRef.setData(["sets": setsData, "completed": completed, "dateCompleted": dateCompleted], merge: true) { error in
-                    if let error = error {
-                        print("Error updating session history: \(error.localizedDescription)")
-                    } else {
-                        print("Session history updated for Week \(weekNumber), Day \(dayNumber)")
-                    }
-                }
-            
-            let newSetData: [String: Any] = [
-                    "setIndex": setIndex,
-                    "weight": weight,
-                    "reps": reps,
-                    "unit": unit,
-                    "weekNumber": weekNumber,
-                    "dayNumber": dayNumber,
-                    "completed": true,
-                    "dateCompleted": dateCompleted
-                ]
-            fullHistoryRef.getDocument { document, error in
-                if let document = document, document.exists {
-                    var existingSets = document.data()?["sets"] as? [[String: Any]] ?? []
-                    
-                    // ✅ Prevent duplicate entries
-                    if !existingSets.contains(where: {
-                        $0["setIndex"] as? Int == setIndex &&
-                        $0["weekNumber"] as? Int == weekNumber &&
-                        $0["dayNumber"] as? Int == dayNumber
-                    }) {
-                        existingSets.append(newSetData)
-                        
-                        fullHistoryRef.setData(["sets": existingSets], merge: true) { error in
-                            if let error = error {
-                                print("Error updating full history: \(error.localizedDescription)")
-                            } else {
-                                print("New set added to full history for set \(setIndex)")
-                            }
-                        }
-                    }
-                } else {
-                    // ✅ First time logging this exercise
-                    fullHistoryRef.setData(["sets": [newSetData]]) { error in
-                        if let error = error {
-                            print("Error creating full history: \(error.localizedDescription)")
-                        } else {
-                            print("Full exercise history created for first time.")
-                        }
-                    }
-                }
-            }
-//            fullHistoryRef.getDocument { document, error in
-//                if let document = document, document.exists {
-//                    if var existingSets = document.data()?["sets"] as? [[String: Any]] {
-//                        existingSets.append(contentsOf: setsData)
-//                        fullHistoryRef.setData(["sets": existingSets], merge: true) { error in
-//                            if let error = error {
-//                                print("Error updating full history: \(error.localizedDescription)")
-//                            } else {
-//                                print("Full exercise history successfully updated.")
-//                            }
-//                        }
-//                    }
-//                } else {
-//                    fullHistoryRef.setData(["sets": setsData, "dateCompleted": dateCompleted]) { error in
-//                        if let error = error {
-//                            print("Error creating full history: \(error.localizedDescription)")
-//                        } else {
-//                            print("Full exercise history created.")
-//                        }
-//                    }
-//                }
-//            }
-            self.isExerciseComplete = completed
-        }
-    }
-    
-    private func initializeSets() {
-        if let setsString = exercise.sets, let firstChar = setsString.first, let setsCount = Int(String(firstChar)) {
-            self.numberOfSets = setsCount
-            self.sets = (0..<setsCount).map { WorkoutSet(setIndex: $0) }
-        }
-    }
-    
-    private func buttonContent(for set: WorkoutSet, index: Int) -> some View {
-        
-        HStack {
-            if set.completed {
-                Text("\(set.reps ?? 0) | \(set.weight ?? 0, specifier: "%.1f") \(set.unit ?? "")")
-                    .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(AppConfig.main_off_white) : Color(AppConfig.main_orange))
-                    .bold()
-                    .font(.system(size: 8))
-            } else {
-                Text("\(self.exercise.reps!)")
-                    .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(AppConfig.main_off_white) : Color(AppConfig.main_orange))
-                    .bold()
-                    .font(.system(size: 8))
-            }
-//            if let weight = set.weight {
-//                Text("\(set.reps ?? 0) | \(set.weight ?? 0, specifier: "%.1f") \(set.unit ?? "")")
-//                    .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(AppConfig.main_off_white) : Color(AppConfig.main_orange))
-//                    .bold()
-//                    .font(.system(size: 8))
-//            } else {
-//                Text("\(self.exercise.reps!)")
-//                    .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(AppConfig.main_off_white) : Color(AppConfig.main_orange))
-//                    .bold()
-//                    .font(.system(size: 8))
-//            }
+            let newSet = WorkoutSet(setIndex: setIndex, weight: weight, reps: reps, unit: unit, completed: true)
+            isExerciseComplete = appDataStore.logExerciseData(firebaseManager: firebaseManager, exerciseId: exercise.exerciseID, weekNumber: weekNumber, dayNumber: dayNumber, newSet: newSet, numSets: numberOfSets ?? 0)
+            loadExerciseHistory()
         }
     }
     
@@ -224,44 +88,39 @@ struct ExerciseBlockView: View {
         VStack {
             HStack {
                 VStack(alignment: .leading) {
-                    Text(exercise.exerciseName)
-                        .font(.system(size: 22))
+                    Text(exercise.exerciseName!)
+                        .font(.custom("Nexa-Heavy", size: 25))
                         .bold()
                         .padding(.bottom, 5)
 
-                    if numberOfSets != nil && sets.count == numberOfSets {
+                    if !loading {
                         HStack {
                             ForEach(0..<numberOfSets!, id: \.self) { index in
-                                let set = sets[index]
+                                let set = mostRecentSets[index]
                                 Button {
                                     selectedSetIndex = SetIndexWrapper(id: index)
                                 } label: {
                                     HStack {
-                                        if set.completed {
+                                        if set.completed! {
                                             Text("\(set.reps ?? 0) | \(set.weight ?? 0, specifier: "%.1f") \(set.unit ?? "")")
-                                                .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(AppConfig.main_off_white) : Color(AppConfig.main_orange))
+                                                .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(.white) : Color(AppConfig.main_dark_blue))
                                                 .bold()
-                                                .font(.system(size: 8))
+                                                .foregroundStyle(.white)
+                                                .font(.custom("Nexa-Heavy", size: 12))
+                                        } else if set.weight != nil {
+                                            Text("\(set.reps ?? 0) | \(set.weight ?? 0, specifier: "%.1f") \(set.unit ?? "")")
+                                                .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(.white) : Color(AppConfig.main_dark_blue))
+                                                .bold()
+                                                .font(.custom("Nexa-Heavy", size: 12))
                                         } else {
                                             Text("\(self.exercise.reps!)")
-                                                .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(AppConfig.main_off_white) : Color(AppConfig.main_orange))
+                                                .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(.white) : Color(AppConfig.main_dark_blue))
                                                 .bold()
-                                                .font(.system(size: 8))
+                                                .font(.custom("Nexa-Heavy", size: 12))
                                         }
-                            //            if let weight = set.weight {
-                            //                Text("\(set.reps ?? 0) | \(set.weight ?? 0, specifier: "%.1f") \(set.unit ?? "")")
-                            //                    .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(AppConfig.main_off_white) : Color(AppConfig.main_orange))
-                            //                    .bold()
-                            //                    .font(.system(size: 8))
-                            //            } else {
-                            //                Text("\(self.exercise.reps!)")
-                            //                    .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(AppConfig.main_off_white) : Color(AppConfig.main_orange))
-                            //                    .bold()
-                            //                    .font(.system(size: 8))
-                            //            }
                                     }
                                 }
-                                .buttonStyle(SetsButtonStyle(selectedButtons: $selectedButtons, isShowingEntryView: $isShowingEntryView, selectedSetIndex: $selectedSetIndex, index: index, isExerciseComplete: $isExerciseComplete, activeSheet: $activeSheet, isSetComplete: sets[index].completed))
+                                .buttonStyle(SetsButtonStyle(selectedButtons: $selectedButtons, isShowingEntryView: $isShowingEntryView, selectedSetIndex: $selectedSetIndex, index: index, isExerciseComplete: $isExerciseComplete, activeSheet: $activeSheet, isSetComplete: mostRecentSets[index].completed!))
                                 .disabled(isExerciseComplete)
                             }
                         }
@@ -271,17 +130,17 @@ struct ExerciseBlockView: View {
                 Spacer()
                 VStack {
                     if isExerciseComplete {
-                        Image("CheckMarkFill")
+                        Image("Complete")
                             .resizable()
                             .foregroundStyle(Color(AppConfig.main_bright_pink))
-                            .frame(width: 60, height: 60)
-                            .padding(.trailing, -5)
+                            .frame(width: 40, height: 40)
+//                            .padding(.trailing, -5)
                     } else {
-                        Image("CheckMark")
+                        Image("Incomplete")
                             .resizable()
                             .foregroundStyle(Color(AppConfig.main_bright_pink))
-                            .frame(width: 60, height: 60)
-                            .padding(.trailing, -5)
+                            .frame(width: 40, height: 40)
+//                            .padding(.trailing, -5)
                     }
                     Spacer()
                 }
@@ -293,7 +152,7 @@ struct ExerciseBlockView: View {
                     Button {
                         isPresentingVideo = true
                     } label: {
-                        Image(systemName: "play.circle")
+                        Image("GreenPlayButton")
                             .resizable()
                             .foregroundStyle(Color(AppConfig.main_bright_pink))
                             .frame(width: 35, height: 35)
@@ -303,10 +162,10 @@ struct ExerciseBlockView: View {
                 Button {
                     activeSheet = .history
                 } label: {
-                    Image("Folder")
+                    Image("GreenFolder")
                         .resizable()
                         .foregroundStyle(Color(AppConfig.main_bright_pink))
-                        .frame(width: 40, height: 40)
+                        .frame(width: 40, height: 35)
                 }
                 .padding(.trailing, 10)
                 VStack {
@@ -330,36 +189,54 @@ struct ExerciseBlockView: View {
             }
             .padding(.bottom, 10)
 
-            if exercise.exerciseDescription != "None" && exercise.exerciseDescription != "description of exercise" {
+            if exercise.exerciseDescription! != "None" && exercise.exerciseDescription! != "description of exercise" {
                 HStack {
-                    ExpandableTextView(text: exercise.exerciseDescription, previewCharacterLimit: 80)
+//                    ExpandableTextView(text: exercise.exerciseDescription!, previewCharacterLimit: 80)
+                    Text(exercise.exerciseDescription!)
+                        .font(.custom("Nexa-ExtraLight", size: 12))
                     Spacer()
                 }
             }
         }
-        .padding(20)
-        .border(Color(AppConfig.main_neon_green))
+        .padding(CGFloat(padding))
+//        .border(Color(AppConfig.main_neon_green))
+        .clipped()
+        .cornerRadius(20)
+        .background(Color(AppConfig.main_light_blue))
         .fullScreenCover(isPresented: $isPresentingVideo) {
-            VideoPlayerView(videoURL: URL(string: exercise.exerciseVideoURL)!)
+            if exercise.exerciseVideoURL != nil {
+                VideoPlayerView(videoURL: URL(string: exercise.exerciseVideoURL!)!)
+            }
         }
         .onAppear {
-            initializeSets()
-            loadExerciseData()
+            loadExerciseHistory()
         }
-        .sheet(item: $activeSheet, onDismiss: {
-            loadExerciseData()  // ✅ Reload exercise completion status after closing the history sheet
-        }) { sheet in
+        //, weight: "\(self.mostRecentSets[setIndexWrapper.id].weight)" ?? "", reps: self.mostRecentSets[setIndexWrapper.id].reps ?? 10, selectedUnit: self.mostRecentSets[setIndexWrapper.id].unit ?? "lbs")
+        .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .dataEntry(let setIndexWrapper):
-                DataEntryView(setIndex: setIndexWrapper.id) { setIndex, weight, reps, unit in
-//                    sets[setIndex] = WorkoutSet(setIndex: setIndex, weight: weight, reps: reps, unit: unit)
-                    updateExerciseCompletion(setIndex: setIndex, weight: weight, reps: reps, unit: unit)
+                if self.mostRecentSets[setIndexWrapper.id].weight != nil {
+                    DataEntryView(weight: "\(String(self.mostRecentSets[setIndexWrapper.id].weight!))", selectedReps: self.mostRecentSets[setIndexWrapper.id].reps ?? 10, selectedUnit: self.mostRecentSets[setIndexWrapper.id].unit ?? "lbs", setIndex: setIndexWrapper.id) { setIndex, weight, reps, unit in
+                        updateExerciseCompletion(setIndex: setIndex, weight: weight, reps: reps, unit: unit)
+                    }
+                    .transparentSheet()
+                    .presentationBackground(.clear)
+                } else {
+                    DataEntryView(weight: "", selectedReps: self.mostRecentSets[setIndexWrapper.id].reps ?? 10, selectedUnit: self.mostRecentSets[setIndexWrapper.id].unit ?? "lbs", setIndex: setIndexWrapper.id) { setIndex, weight, reps, unit in
+                        updateExerciseCompletion(setIndex: setIndex, weight: weight, reps: reps, unit: unit)
+                    }
+                    .transparentSheet()
+                    .presentationBackground(.clear)
                 }
-                .transparentSheet()
-                .presentationBackground(.clear)
+                    
+//                DataEntryView(weight: "\(String(self.mostRecentSets[setIndexWrapper.id].weight))", selectedReps: self.mostRecentSets[setIndexWrapper.id].reps ?? 10, selectedUnit: self.mostRecentSets[setIndexWrapper.id].unit ?? "lbs", setIndex: setIndexWrapper.id) { setIndex, weight, reps, unit in
+//                    updateExerciseCompletion(setIndex: setIndex, weight: weight, reps: reps, unit: unit)
+//                }
+//                .transparentSheet()
+//                .presentationBackground(.clear)
                 
             case .history:
-                ExerciseHistoryView(exerciseName: exercise.exerciseName, exercise: exercise)
+                ExerciseHistoryView(exerciseName: exercise.exerciseName!, exercise: exercise)
                     .transparentSheet()
                     .presentationBackground(.clear)
             }
@@ -418,11 +295,10 @@ struct SetsButtonStyle: ButtonStyle {
     
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .padding()
             .frame(width: 80, height: 30)
-            .background((selectedButtons.contains(index) || isSetComplete) ? Color(AppConfig.main_orange) : Color(AppConfig.main_off_white))
-            .foregroundColor((selectedButtons.contains(index) || isSetComplete) ? Color(AppConfig.main_off_white) : Color(AppConfig.main_orange))
-            .border(Color(AppConfig.main_orange), width: 3)
+            .background((selectedButtons.contains(index) || isSetComplete) ? Color(AppConfig.main_dark_blue) : Color(.white))
+            .foregroundColor((selectedButtons.contains(index) || isSetComplete) ? Color(.white): Color(AppConfig.main_dark_blue))
+            .border(Color(AppConfig.main_dark_blue), width: 3)
             .cornerRadius(5)
             .opacity(configuration.isPressed ? 0.5 : 1)
             .onTapGesture {

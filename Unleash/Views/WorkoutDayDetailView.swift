@@ -20,7 +20,7 @@ struct UnderlineExerciseTypePicker: View {
                 VStack {
                     Text("\(labels[option])")
                         .bold()
-                        .foregroundColor(selection == option ? Color(AppConfig.main_orange) : .black)
+                        .foregroundColor(selection == option ? Color(AppConfig.main_light_blue) : .black)
                         .frame(width: (width/Double(workoutTypes.count) - 20.0/3.0))
                         .onTapGesture {
                             selection = option
@@ -28,8 +28,8 @@ struct UnderlineExerciseTypePicker: View {
                     if selection == option {
                         Spacer()
                         Rectangle()
-                            .background(Color(AppConfig.main_orange))
-                            .foregroundStyle(Color(AppConfig.main_orange))
+                            .background(Color(AppConfig.main_light_blue))
+                            .foregroundStyle(Color(AppConfig.main_light_blue))
                             .frame(height: 5)
                     }
                     if selection != option {
@@ -50,8 +50,8 @@ struct WorkoutDayDetailView: View {
     @EnvironmentObject var appDataStore: AppDataStorage
     @EnvironmentObject var firebaseManager: FirebaseManager
     
-    @State var exercises: [[UserExercise]] = []
-    @State var mainExerciseBlocks: OrderedDictionary<Int, [UserExercise]> = [:]
+    @State var exercises: [[ProgramExercise]] = []
+    @State var mainExerciseBlocks: OrderedDictionary<Int, [ProgramExercise]> = [:]
     
     @State var selectedTab: Int = 0
     
@@ -71,7 +71,7 @@ struct WorkoutDayDetailView: View {
             return
         }
 
-        var exerciseBlocks: OrderedDictionary<Int, [UserExercise]> = [:]
+        var exerciseBlocks: OrderedDictionary<Int, [ProgramExercise]> = [:]
         
         for exercise in exercises[1] {
             if let key = exercise.exerciseGroupNumber {
@@ -90,8 +90,8 @@ struct WorkoutDayDetailView: View {
                     .padding(.horizontal, 20)
                     .background(alignment: .bottom) {
                         Rectangle()
-                            .background(Color(AppConfig.main_bright_pink))
-                            .foregroundStyle(Color(AppConfig.main_bright_pink))
+                            .background(Color(AppConfig.main_other_pink))
+                            .foregroundStyle(Color(AppConfig.main_other_pink))
                             .frame(height: 5)
                             .offset(y: -10)
                     }
@@ -102,7 +102,7 @@ struct WorkoutDayDetailView: View {
                 if !self.exercises.isEmpty && !self.mainExerciseBlocks.isEmpty {
                     switch(selectedTab) {
                     case 0: WorkoutTypeDetailView(exerciseType: "warmup", weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[0])
-                    case 1: WorkoutTypeMainsView(weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[1], mainExerciseBlocks: mainExerciseBlocks)
+                    case 1: WorkoutTypeMainsView(weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[1], mainExerciseBlocks: mainExerciseBlocks).padding(.horizontal, 20)
                     case 2: WorkoutTypeDetailView(exerciseType: "cooldown", weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[2])
                         
                     default:
@@ -112,12 +112,11 @@ struct WorkoutDayDetailView: View {
                     ProgressView("Loading exercises...")
                 }
             }
-            .background(Color(AppConfig.main_mint_green))
            .task {
                 loadExercises(firebaseManager: firebaseManager)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .background(Color(AppConfig.main_mint_green))
+            .background(Color(AppConfig.main_background))
         }
         .onAppear(perform: {
             loadExercises(firebaseManager: firebaseManager)

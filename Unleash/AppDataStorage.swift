@@ -16,34 +16,35 @@ class AppDataStorage: ObservableObject {
     @Published var activeUser: LocalUser
     @Published var activeWorkoutProgram: WorkoutProgram?
     @Published var loggedIn: Bool
+    @Published var allExercises: [String:Exercise]
+    
+    @Published var totalProgramInstances: Int
     
     init() {
         self.activeUser = LocalUser.NullUser
         self.loggedIn = false
         self.activeWorkoutProgram = nil
+        self.allExercises = [:]
+        totalProgramInstances = 0
     }
     
-//    private func loadExerciseData(firebaseManager: FirebaseManager, exercise: Exercise) {
-//        let ref = firebaseManager.firestore.collection("users").document(self.activeUser.id)
-//            .collection("exerciseHistory").document(exercise.exerciseID)
-//
-//        ref.getDocument { document, error in
-//            guard let data = document?.data(), error == nil else {
-//                print("Error fetching exercise data: \(error?.localizedDescription ?? "Unknown error")")
-//                return
-//            }
-//            if let fetchedSets = data["sets"] as? [[String: Any]] {
-//                self.sets = fetchedSets.compactMap { dict in
-//                    guard let setIndex = dict["setIndex"] as? Int,
-//                          let weight = dict["weight"] as? Double,
-//                          let reps = dict["reps"] as? Int,
-//                          let unit = dict["unit"] as? String else { return nil }
-//                    return WorkoutSet(setIndex: setIndex, weight: weight, reps: reps, unit: unit)
-//                }
-//            }
-//            self.isExerciseComplete = data["completed"] as? Bool ?? false
-//        }
-//    }
+    func calculateProgramCompletion() -> Double {
+        var totalCompletedExercises: Int = 0
+        
+        if let program = self.activeWorkoutProgram {
+            for week in program.trainingWeeks {
+                for workout in week.workouts {
+                    let exerciseIds = Set((workout.exercises + workout.warmups + workout.cooldowns).map { "\($0.exerciseID)_week\(week.weekNumber)_day\(workout.dayNumber)" })
+                    let historyIds = Set(self.activeUser.exerciseHistory.map { $0.id })
+                    
+                    let completedCount = exerciseIds.intersection(historyIds).count
+                    totalCompletedExercises += completedCount
+                }
+            }
+        }
+        
+        return Double(totalCompletedExercises)/Double(totalProgramInstances)
+    }
     
     func saveWorkoutSet(firebaseMangager: FirebaseManager, exerciseId: String, week: Int, day: Int, sets: [WorkoutSet]) {
         let exerciseRef = firebaseMangager.firestore.collection("users").document(self.activeUser.id)
@@ -74,202 +75,165 @@ class AppDataStorage: ObservableObject {
         }
     }
     
-    func logExerciseData(firebaseManager: FirebaseManager, exerciseID: String, weekNumber: Int, dayNumber: Int, weights: [Double]) {
-        let weekDayCode = "\(weekNumber),\(dayNumber)"
-        let newLog: [String: [String: [Double]]] = [exerciseID: [weekDayCode: weights]]
+    func logExerciseData(firebaseManager: FirebaseManager, exerciseId: String, weekNumber: Int, dayNumber: Int, newSet: WorkoutSet, numSets: Int) -> Bool {
+        let userRef = firebaseManager.firestore.collection("users").document(self.activeUser.id)
+        var exerciseCompleted: Bool = false
+        if numSets == 1 {
+            exerciseCompleted = true
+        }
+        let instanceId: String = "\(exerciseId)_week\(weekNumber)_day\(dayNumber)"
         
-        let docRef = firebaseManager.firestore.collection("users")
-            .document(self.activeUser.id)
+        let historyRef = userRef
+            .collection("exerciseHistory")
+            .document(instanceId)
         
-        docRef.getDocument { (document, error) in
-            guard error == nil else {
-                print("Error fetching document: \(error!.localizedDescription)")
-                return
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let dateCompleted = Date()
+        
+        let newSetData: [String: Any] = [
+            "setIndex": newSet.setIndex,
+            "weight": newSet.weight,
+            "reps": newSet.reps,
+            "unit": newSet.unit,
+            "completed": true
+        ]
+        
+        // Modify local data
+        if let index = activeUser.exerciseHistory.firstIndex(where: { $0.id == instanceId }) {
+            // Safely retrieve and update the notes array
+            activeUser.exerciseHistory[index].sets?.append(newSet)
+            if (activeUser.exerciseHistory[index].sets?.count == numSets) {
+                exerciseCompleted = true
+                activeUser.exerciseHistory[index].completed = true
             }
-            
-            var existingData: [String: [String: [Double]]] = [:]
-
-            if let document = document, document.exists, let data = document.data() {
-                // Extract existing Firestore data if present
-                existingData = data["exercises"] as? [String: [String: [Double]]] ?? [:]
-            }
-            
-            // Merge the new data into the existing structure
-            if existingData[exerciseID] == nil {
-                existingData[exerciseID] = [:]  // Initialize if outerKey does not exist
-            }
-            if existingData[exerciseID]![weekDayCode] == nil {
-                existingData[exerciseID]![weekDayCode] = []  // Initialize if innerKey does not exist
-            }
-            existingData[exerciseID]![weekDayCode] = weights
-
-            // Update Firestore with the modified or newly created data
-            docRef.setData(["exercises": existingData], merge: true) { error in
-                if let error = error {
-                    print("Error updating document: \(error.localizedDescription)")
-                } else {
-                    print("Data successfully added to Firestore!")
-                }
+            print("Updated set")
+        } else {
+            if numSets == 1 {
+                exerciseCompleted = true
+                let newHistoryInstance: ExerciseHistoryInstance = ExerciseHistoryInstance(id: instanceId, exerciseId: exerciseId, weekNumber: weekNumber, dayNumber: dayNumber, completed: true, dateCompleted: dateCompleted, sets: [newSet])
+                activeUser.exerciseHistory.append(newHistoryInstance)
+            } else {
+                let newHistoryInstance: ExerciseHistoryInstance = ExerciseHistoryInstance(id: instanceId, exerciseId: exerciseId, weekNumber: weekNumber, dayNumber: dayNumber, completed: false, dateCompleted: dateCompleted, sets: [newSet])
+                activeUser.exerciseHistory.append(newHistoryInstance)
             }
         }
-    }
-    
-    func getExercisesDataSeperated(
-        firebaseManager: FirebaseManager,
-        exercises: [Exercise],
-        completion: @escaping ([[UserExercise]]) -> Void
-    ) {
-        let group = DispatchGroup()
         
-        var exercisesToReturn: [[UserExercise]] = [[],[],[]]
-
-        for exercise in exercises {
-            let exerciseID = exercise.exerciseID
-            group.enter()
-            let docRef = firebaseManager.firestore.collection("exercises").document(exerciseID)
-            
-            docRef.getDocument { (document, error) in
-                defer { group.leave() }
+        // Modify database data
+        historyRef.getDocument { document, error in
+            if let document = document, document.exists {
+                var existingSets = document.data()?["sets"] as? [[String: Any]] ?? []
                 
-                if let error = error {
-                    print("Error fetching exercise \(exerciseID): \(error.localizedDescription)")
-                    return
-                }
-                
-                if let document = document, document.exists, let data = document.data() {
-                    let newExercise = UserExercise(
-                        exerciseName: data["exerciseName"] as? String ?? "",
-                        exerciseDescription: data["exerciseDescription"] as? String ?? "",
-                        exerciseVideoURL: data["exerciseVideoURL"] as? String ?? "",
-                        pastWeightScores: [self.activeUser.exercises[exerciseID]] as? [Double] ?? [],
-                        exerciseID: exerciseID,
-                        reps: exercise.reps,
-                        sets: exercise.sets,
-                        rpe: exercise.rpe,
-                        rest: exercise.rest,
-                        exerciseGroupNumber: exercise.exerciseGroupNumber,
-                        exerciseType: exercise.exerciseType
-                    )
+                // Prevent duplicate entries
+                if !existingSets.contains(where: {
+                    $0["setIndex"] as? Int == newSet.setIndex
+                }) {
+                    existingSets.append(newSetData)
                     
-                    if exercise.exerciseType == "warmup" {
-                        exercisesToReturn[0].append(newExercise)
-                    } else if exercise.exerciseType == "cooldown" {
-                        exercisesToReturn[2].append(newExercise)
+                    if exerciseCompleted {
+                        historyRef.setData([
+                            "sets": existingSets,
+                            "completed": exerciseCompleted,
+                            "dateCompleted": dateCompleted,
+                            "exerciseId": exerciseId,
+                            "weekNumber": weekNumber,
+                            "dayNumber": dayNumber
+                        ], merge: true) { error in
+                            if let error = error {
+                                print("Error updating history: \(error.localizedDescription)")
+                            } else {
+                                print("New set added to history for set \(newSet.setIndex)")
+                            }
+                        }
                     } else {
-                        exercisesToReturn[1].append(newExercise)
+                        historyRef.setData([
+                            "sets": existingSets,
+                            "completed": exerciseCompleted,
+                            "exerciseId": exerciseId,
+                            "weekNumber": weekNumber,
+                            "dayNumber": dayNumber
+                        ], merge: true) { error in
+                            if let error = error {
+                                print("Error updating history: \(error.localizedDescription)")
+                            } else {
+                                print("New set added to history for set \(newSet.setIndex)")
+                            }
+                        }
+                    }
+                }
+            } else {
+                // First time logging this exercise
+                if exerciseCompleted {
+                    historyRef.setData([
+                        "sets": [newSetData],
+                        "completed": exerciseCompleted,
+                        "dateCompleted": dateCompleted,
+                        "exerciseId": exerciseId,
+                        "weekNumber": weekNumber,
+                        "dayNumber": dayNumber
+                    ]) { error in
+                        if let error = error {
+                            print("Error creating history: \(error.localizedDescription)")
+                        } else {
+                            print("Exercise history created for first time.")
+                        }
+                    }
+                } else {
+                    historyRef.setData([
+                        "sets": [newSetData],
+                        "completed": exerciseCompleted,
+                        "exerciseId": exerciseId,
+                        "weekNumber": weekNumber,
+                        "dayNumber": dayNumber
+                    ]) { error in
+                        if let error = error {
+                            print("Error creating history: \(error.localizedDescription)")
+                        } else {
+                            print("Exercise history created for first time.")
+                        }
                     }
                 }
             }
         }
-        
-        group.notify(queue: .main) {
-            completion(exercisesToReturn)
-        }
+        return exerciseCompleted
     }
     
-    func getExercisesData(
+    func getExercisesDataSeperated(
         firebaseManager: FirebaseManager,
-        exercises: [Exercise],
-        completion: @escaping ([UserExercise]) -> Void
+        exercises: [ProgramExercise],
+        completion: @escaping ([[ProgramExercise]]) -> Void
     ) {
-        var exercisesToReturn: [UserExercise] = []
         let group = DispatchGroup()
+        
+        var exercisesToReturn: [[ProgramExercise]] = [[],[],[]]
 
         for exercise in exercises {
             let exerciseID = exercise.exerciseID
             group.enter()
-            let docRef = firebaseManager.firestore.collection("exercises").document(exerciseID)
+            let exerciseInformation: Exercise? = self.allExercises[exerciseID]
+            let newExercise: ProgramExercise = ProgramExercise(exerciseID: exerciseID, exerciseName: exerciseInformation?.exerciseName, exerciseDescription: exerciseInformation?.exerciseDescription, exerciseVideoURL: exerciseInformation?.exerciseVideoURL, exerciseType: exercise.exerciseType, reps: exercise.reps, sets: exercise.sets, rpe: exercise.rpe, rest: exercise.rest, exerciseGroupNumber: exercise.exerciseGroupNumber)
             
-            docRef.getDocument { (document, error) in
-                defer { group.leave() }
-                
-                if let error = error {
-                    print("Error fetching exercise \(exerciseID): \(error.localizedDescription)")
-                    return
-                }
-                
-                if let document = document, document.exists, let data = document.data() {
-                    let newExercise = UserExercise(
-                        exerciseName: data["exerciseName"] as? String ?? "",
-                        exerciseDescription: data["exerciseDescription"] as? String ?? "",
-                        exerciseVideoURL: data["exerciseVideoURL"] as? String ?? "",
-                        pastWeightScores: [self.activeUser.exercises[exerciseID]] as? [Double] ?? [],
-                        exerciseID: exerciseID,
-                        reps: exercise.reps,
-                        sets: exercise.sets,
-                        rpe: exercise.rpe,
-                        rest: exercise.rest,
-                        exerciseGroupNumber: exercise.exerciseGroupNumber,
-                        exerciseType: exercise.exerciseType
-                    )
-                    exercisesToReturn.append(newExercise)
-                }
+            if exercise.exerciseType == "warmup" {
+                exercisesToReturn[0].append(newExercise)
+            } else if exercise.exerciseType == "cooldown" {
+                exercisesToReturn[2].append(newExercise)
+            } else {
+                exercisesToReturn[1].append(newExercise)
             }
+            group.leave()
         }
         
         group.notify(queue: .main) {
             completion(exercisesToReturn)
         }
     }
-
     
-//    func getExerciseData(
-//        firebaseManager: FirebaseManager,
-//        exerciseID: String,
-//        reps: String,
-//        sets: String,
-//        rpe: String,
-//        rest: String,
-//        completion: @escaping (UserExercise?) -> Void
-//    ) {
-//        let docRef = firebaseManager.firestore.collection("exercises").document(exerciseID)
-//        
-//        docRef.getDocument { (document, error) in
-//            guard error == nil else {
-//                print("Error getting exercise: ", error?.localizedDescription ?? "Unknown error")
-//                completion(nil)
-//                return
-//            }
-//            
-//            if let document = document, document.exists, let data = document.data() {
-//                print("data: ", data)
-//                let newExercise = UserExercise(
-//                    exerciseName: data["exerciseName"] as? String ?? "",
-//                    exerciseDescription: data["exerciseDescription"] as? String ?? "",
-//                    exerciseVideoURL: data["exerciseVideoURL"] as? String ?? "",
-//                    pastWeightScores: [self.activeUser.exercises[exerciseID]] as? [Double] ?? [],
-//                    exerciseID: exerciseID,
-//                    reps: reps,
-//                    sets: sets,
-//                    rpe: rpe,
-//                    rest: rest
-//                )
-//                completion(newExercise)
-//            } else {
-//                completion(nil)
-//            }
-//        }
-//    }
-    
-//    func getExerciseData(firebaseManager: FirebaseManager, exerciseID: String, reps: String, sets: String, rpe: String, rest: String) -> UserExercise? {
-//        var newExercise: UserExercise? = nil
-//        let docRef = firebaseManager.firestore
-//            .collection("exercises").document(exerciseID)
-//        docRef.getDocument { (document, error) in
-//            guard error == nil else {
-//                print("error getting user: ", error ?? "")
-//                return
-//            }
-//            if let document = document, document.exists {
-//                let data = document.data()
-//                if let data = data {
-//                    print("data: ", data)
-//                    newExercise = UserExercise(exerciseName: data["exerciseName"] as? String ?? "", exerciseDescription: data["exerciseDescription"] as? String ?? "", exerciseVideoURL: data["exerciseVideoURL"] as? String ?? "", exerciseID: exerciseID, reps: reps, sets: sets, rpe: rpe, rest: rest)
-//                }
-//            }
-//        }
-//        return newExercise
-//    }
+    func getObjectsContainingID<T: Identifiable>(
+        from array: [T],
+        containing searchString: String
+    ) -> [T] where T.ID == String {
+        return array.filter { $0.id.contains(searchString) }
+    }
     
     func loginUser(firebaseManager: FirebaseManager, email: String, password: String) -> String? {
         var errMsg: String? = nil
@@ -305,56 +269,110 @@ class AppDataStorage: ObservableObject {
     func setupApplication(firebaseManger: FirebaseManager) {
         inputLocalUser(firebaseManager: firebaseManger)
         loadProgram(firebaseManager: firebaseManger)
+        loadExercises(firebaseManager: firebaseManger)
         print("program loaded")
     }
     
     func inputLocalUser(firebaseManager: FirebaseManager) {
         let user = firebaseManager.auth.currentUser
-        if user != nil {
-            let uid = firebaseManager.auth.currentUser?.uid
-            if let userUID = uid {
-                let docRef = firebaseManager.firestore.collection("users").document(userUID)
-                docRef.getDocument { (document, error) in
-                    guard error == nil else {
-                        print("error getting user: ", error ?? "")
-                        return
-                    }
-                    if let document = document, document.exists {
-                        let data = document.data()
-                        if let data = data {
-                            print("data: ", data)
-                            let loggedInUser: LocalUser = LocalUser(id: userUID, name: data["name"] as? String ?? "User", email: data["email"] as? String ?? "None", exercises: data["exercises"] as? [String: [String: [Double]]] ?? [:])
-                            self.activeUser = loggedInUser
-                        }
+        guard let userUID = user?.uid else { return }
+
+        let docRef = firebaseManager.firestore.collection("users").document(userUID)
+        
+        let dispatchGroup = DispatchGroup()
+        var exerciseHistoryList: [ExerciseHistoryInstance] = []
+        var userData: [String: Any]?
+
+        // Step 1: Fetch User Document
+        dispatchGroup.enter() // ENTER GROUP FOR USER DOCUMENT
+        docRef.getDocument { (document, error) in
+            if let document = document, document.exists, error == nil {
+                userData = document.data() // Store user data
+            } else {
+                print("Error getting user document: \(error?.localizedDescription ?? "Unknown error")")
+            }
+            dispatchGroup.leave() // LEAVE GROUP
+        }
+
+        // Step 2: Fetch Exercise History
+        dispatchGroup.enter() // ENTER GROUP FOR EXERCISE HISTORY
+        docRef.collection("exerciseHistory").getDocuments { (snapshot, error) in
+            guard let snapshot = snapshot, error == nil else {
+                print("Error fetching exercise history: \(error?.localizedDescription ?? "Unknown error")")
+                dispatchGroup.leave()
+                return
+            }
+
+            print("Number of exercise history documents: \(snapshot.documents.count)")
+            
+            for documentSnapshot in snapshot.documents {
+                let documentData = documentSnapshot.data()
+                let id = documentSnapshot.documentID
+                let exerciseId = documentData["exerciseId"] as? String
+                let dayNumber = documentData["dayNumber"] as? Int
+                let weekNumber = documentData["weekNumber"] as? Int
+                let completed = documentData["completed"] as? Bool
+                let dateString = documentData["dateCompleted"] as? Timestamp
+                let dateCompleted = dateString?.dateValue()
+                
+                var exerciseSets: [WorkoutSet] = []
+                if let setsArray = documentData["sets"] as? [[String: Any]] {
+                    for set in setsArray {
+                        let reps = set["reps"] as? Int
+                        let setIndex = set["setIndex"] as? Int ?? 0
+                        let unit = set["unit"] as? String
+                        let weight = set["weight"] as? Double
+                        
+                        let newWorkoutSet = WorkoutSet(setIndex: setIndex, weight: weight, reps: reps, unit: unit, completed: true)
+                        exerciseSets.append(newWorkoutSet)
                     }
                 }
+
+                let newExerciseHistoryInstance = ExerciseHistoryInstance(
+                    id: id,
+                    exerciseId: exerciseId,
+                    weekNumber: weekNumber,
+                    dayNumber: dayNumber,
+                    completed: completed,
+                    dateCompleted: dateCompleted,
+                    sets: exerciseSets
+                )
+                exerciseHistoryList.append(newExerciseHistoryInstance)
+            }
+
+            dispatchGroup.leave() // LEAVE GROUP
+        }
+
+        // Step 3: Once Both Queries Are Done, Update `activeUser`
+        dispatchGroup.notify(queue: .main) {
+            print("Both Firestore calls completed. Updating activeUser.")
+            
+            if let data = userData {
+                let loggedInUser = LocalUser(
+                    id: userUID,
+                    name: data["name"] as? String ?? "User",
+                    email: data["email"] as? String ?? "None",
+                    exerciseHistory: exerciseHistoryList
+                )
+                self.activeUser = loggedInUser
+                print("activeUser is now set with full history")
+            } else {
+                print("Error: User data not available.")
             }
         }
     }
+
     
     func loadProgram(firebaseManager: FirebaseManager) {
-        var workoutWeek1 = WorkoutWeek(weekNumber: 1, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek2 = WorkoutWeek(weekNumber: 2, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek3 = WorkoutWeek(weekNumber: 3, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek4 = WorkoutWeek(weekNumber: 4, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek5 = WorkoutWeek(weekNumber: 5, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek6 = WorkoutWeek(weekNumber: 6, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek7 = WorkoutWeek(weekNumber: 7, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek8 = WorkoutWeek(weekNumber: 8, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek9 = WorkoutWeek(weekNumber: 9, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek10 = WorkoutWeek(weekNumber: 10, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek11 = WorkoutWeek(weekNumber: 11, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek12 = WorkoutWeek(weekNumber: 12, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek13 = WorkoutWeek(weekNumber: 13, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
-        var workoutWeek14 = WorkoutWeek(weekNumber: 14, workouts: [Workout(dayNumber: 1), Workout(dayNumber: 2), Workout(dayNumber: 3), Workout(dayNumber: 4), Workout(dayNumber: 5)])
+        // set number of weeks
+        let numWeeks = 1...14
         
-//        var trainingBlock1 = TrainingBlock(blockNumber: 1, workoutWeeks: [workoutWeek1])
-//        var trainingBlock2 = TrainingBlock(blockNumber: 2, workoutWeeks: [workoutWeek2, workoutWeek3, workoutWeek4])
-//        var trainingBlock3 = TrainingBlock(blockNumber: 3, workoutWeeks: [workoutWeek5, workoutWeek6, workoutWeek7])
-//        var trainingBlock4 = TrainingBlock(blockNumber: 4, workoutWeeks: [workoutWeek8, workoutWeek9, workoutWeek10])
-//        var trainingBlock5 = TrainingBlock(blockNumber: 5, workoutWeeks: [workoutWeek11, workoutWeek12, workoutWeek13])
-//        var trainingBlock6 = TrainingBlock(blockNumber: 6, workoutWeeks: [workoutWeek14])
-                
+        // load blank workout program
+        var workoutProgram = WorkoutProgram(trainingWeeks: (1...14).map { week in
+            WorkoutWeek(weekNumber: week, workouts: (1...5).map { Workout(dayNumber: $0) })
+        })
+        
+        // fill workout program with data
         firebaseManager.firestore
             .collection("allProgramData2")
             .getDocuments {(snapshot, error) in
@@ -363,8 +381,12 @@ class AppDataStorage: ObservableObject {
                   return
                 }
                 print("Number of documents: \(snapshot.documents.count)")
+                self.totalProgramInstances = snapshot.documents.count
+                
                 snapshot.documents.forEach({ (documentSnapshot) in
                     let documentData = documentSnapshot.data()
+                    
+                    let id = documentSnapshot.documentID
                     let weekNumber = documentData["weekNumber"] as? Int
                     let dayNumber = documentData["dayNumber"] as? Int
                     let exerciseType = documentData["exerciseType"] as? String
@@ -374,140 +396,76 @@ class AppDataStorage: ObservableObject {
                     let rpe = documentData["rpe"] as? String
                     let rest = documentData["rest"] as? String
                     let exerciseGroupNumber = documentData["exerciseGroup"] as? Int
-                    
-                    let dayNumberIndex: Int = dayNumber! - 1
         
-                    let new_exercise = Exercise(exerciseID: exerciseID!, exerciseType: exerciseType ?? nil, reps: reps ?? nil, sets: sets ?? nil, rpe: rpe ?? nil, rest: rest ?? nil, exerciseGroupNumber: exerciseGroupNumber ?? nil)
+                    var exerciseName: String = ""
+                    var exerciseDescription: String = ""
+                    var exerciseVideoURL: String = ""
                     
-                    if weekNumber == 1 {
-                        if exerciseType == "warmup" {
-                            workoutWeek1.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek1.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek1.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek1.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 2 {
-                        if exerciseType == "warmup" {
-                            workoutWeek2.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek2.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek2.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek2.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 3 {
-                        if exerciseType == "warmup" {
-                            workoutWeek3.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek3.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek3.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek3.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 4 {
-                        if exerciseType == "warmup" {
-                            workoutWeek4.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek4.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek4.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek4.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 5 {
-                        if exerciseType == "warmup" {
-                            workoutWeek5.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek5.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek5.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek5.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 6 {
-                        if exerciseType == "warmup" {
-                            workoutWeek6.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek6.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek6.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek6.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 7 {
-                        if exerciseType == "warmup" {
-                            workoutWeek7.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek7.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek7.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek7.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 8 {
-                        if exerciseType == "warmup" {
-                            workoutWeek8.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek8.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek8.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek8.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 9 {
-                        if exerciseType == "warmup" {
-                            workoutWeek9.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek9.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek9.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek9.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 10 {
-                        if exerciseType == "warmup" {
-                            workoutWeek10.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek10.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek10.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek10.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 11 {
-                        if exerciseType == "warmup" {
-                            workoutWeek11.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek11.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek11.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek11.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 12 {
-                        if exerciseType == "warmup" {
-                            workoutWeek12.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek12.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek12.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek12.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 13 {
-                        if exerciseType == "warmup" {
-                            workoutWeek13.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek13.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek13.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek13.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
-                    } else if weekNumber == 14 {
-                        if exerciseType == "warmup" {
-                            workoutWeek14.workouts[dayNumberIndex].warmups.append(new_exercise)
-                        } else if exerciseType == "cooldown" {
-                            workoutWeek14.workouts[dayNumberIndex].cooldowns.append(new_exercise)
-                        } else {
-                            workoutWeek14.workouts[dayNumberIndex].focus = exerciseType
-                            workoutWeek14.workouts[dayNumberIndex].exercises.append(new_exercise)
-                        }
+                    if let id = exerciseID {
+                        let currExercise = self.allExercises[id]
+                        exerciseName = currExercise?.exerciseName ?? ""
+                        exerciseDescription = currExercise?.exerciseDescription ?? ""
+                        exerciseVideoURL = currExercise?.exerciseVideoURL ?? ""
                     }
+                    
+                    let newExercise: ProgramExercise = ProgramExercise(exerciseID: exerciseID!, exerciseName: exerciseName, exerciseDescription: exerciseDescription, exerciseVideoURL: exerciseVideoURL, exerciseType: exerciseType, reps: reps, sets: sets, rpe: rpe, rest: rest, exerciseGroupNumber: exerciseGroupNumber)
+                    
+                    let weekIndex = weekNumber! - 1
+                    let dayIndex = dayNumber! - 1
+                    var workout = workoutProgram.trainingWeeks[weekIndex].workouts[dayIndex]
+                    
+                    // Add exercise to the correct category
+                    switch exerciseType {
+                    case "warmup":
+                        workout.warmups.append(newExercise)
+                    case "cooldown":
+                        workout.cooldowns.append(newExercise)
+                    default:
+                        workout.focus = exerciseType
+                        workout.exercises.append(newExercise)
+                    }
+                    
+                    // Assign updated workout back to the structure
+                    workoutProgram.trainingWeeks[weekIndex].workouts[dayIndex] = workout
                 })
             }
-        self.activeWorkoutProgram = WorkoutProgram(trainingWeeks: [workoutWeek1, workoutWeek2, workoutWeek3, workoutWeek4, workoutWeek5, workoutWeek6, workoutWeek7, workoutWeek8, workoutWeek9, workoutWeek10, workoutWeek11, workoutWeek12, workoutWeek13, workoutWeek14])
+        
+        // sort workout program order
+        for weekIndex in numWeeks {
+            for dayIndex in 0..<5 {
+                var workout = workoutProgram.trainingWeeks[weekIndex - 1].workouts[dayIndex]
+                workout.warmups.sort { ($0.exerciseGroupNumber ?? Int.max) < ($1.exerciseGroupNumber ?? Int.max) }
+                workout.cooldowns.sort { ($0.exerciseGroupNumber ?? Int.max) < ($1.exerciseGroupNumber ?? Int.max) }
+                workout.exercises.sort { ($0.exerciseGroupNumber ?? Int.max) < ($1.exerciseGroupNumber ?? Int.max) }
+                workoutProgram.trainingWeeks[weekIndex - 1].workouts[dayIndex] = workout
+            }
+        }
+        
+        
+        
+        // set workout program
+        self.activeWorkoutProgram = workoutProgram
+    }
+    
+    func loadExercises(firebaseManager: FirebaseManager) {
+        firebaseManager.firestore
+            .collection("exercises")
+            .getDocuments {(snapshot, error) in
+                guard let snapshot = snapshot, error == nil else {
+                    //handle error
+                    return
+                }
+                print("Number of documents: \(snapshot.documents.count)")
+                snapshot.documents.forEach({ (documentSnapshot) in
+                    let documentData = documentSnapshot.data()
+                    let id = documentSnapshot.documentID
+                    let exerciseName = documentData["exerciseName"] as? String
+                    let exerciseDescription = documentData["exerciseDescription"] as? String
+                    let exerciseVideoURL = documentData["exerciseVideoURL"] as? String
+                    
+                    let exercise = Exercise(exerciseID: id, exerciseName: exerciseName, exerciseDescription: exerciseDescription, exerciseVideoURL: exerciseVideoURL)
+                    self.allExercises[id] = exercise
+                })
+            }
     }
 }

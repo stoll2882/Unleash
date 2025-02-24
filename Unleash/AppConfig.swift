@@ -44,6 +44,8 @@ class AppConfig {
     
     static var main_light_orange: Color = Color(hex: 0xFFE4DA)
     static var main_dark_blue: Color = Color(hex: 0x465AE1)
+    static var main_light_blue: Color = Color(hex: 0xEFF0FA)
+    static var main_other_pink: Color = Color(hex: 0xEB1563)
     
     static var main_background: Color = main_orange_red
 }

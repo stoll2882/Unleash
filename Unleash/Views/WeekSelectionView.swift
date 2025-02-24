@@ -30,12 +30,12 @@ struct UnderlinePicker: View {
                     VStack {
                         Text("Week \(option)")
                             .bold()
-                            .foregroundColor(selection == option ? Color(AppConfig.main_neon_green) : Color(AppConfig.main_light_orange) )
+                            .foregroundColor(selection == option ? Color(AppConfig.main_light_blue) : Color(AppConfig.main_other_pink) )
                         if selection == option {
                             Spacer()
                             Rectangle()
-                                .background(Color(AppConfig.main_neon_green))
-                                .foregroundStyle(Color(AppConfig.main_neon_green))
+                                .background(Color(AppConfig.main_light_blue))
+                                .foregroundStyle(Color(AppConfig.main_light_blue))
                                 .frame(height: 5)
                         }
                         if selection != option {
@@ -79,8 +79,8 @@ struct WeekSelectionView: View {
             .padding(.horizontal, 20)
             .background(alignment: .bottom) {
                 Rectangle()
-                    .background(Color(AppConfig.main_light_orange))
-                    .foregroundStyle(Color(AppConfig.main_light_orange))
+                    .background(Color(AppConfig.main_other_pink))
+                    .foregroundStyle(Color(AppConfig.main_other_pink))
                     .frame(height: 5)
                     .offset(y: -10)
             }

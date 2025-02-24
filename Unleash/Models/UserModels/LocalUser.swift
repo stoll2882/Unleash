@@ -6,28 +6,21 @@
 //
 
 import Foundation
-// exercises: {
-//   "id": {
-//      "1,1": [25,20,15],
-//      "2,1": [25,25,20],
-//      "3,2": [30,30,25]
-//   }
-// }
 
 class LocalUser: Identifiable, ObservableObject {
-    init(id: String, name: String, email: String, exercises: [String: [String: [Double]]]) {
+    init(id: String, name: String, email: String, exerciseHistory: [ExerciseHistoryInstance]) {
         self.id = id
         self.name = name
         self.email = email
-        self.exercises = exercises
+        self.exerciseHistory = exerciseHistory
     }
     var id: String
     var email: String
     
     @Published var name: String
-    @Published var exercises: [String: [String: [Double]]]
+    @Published var exerciseHistory: [ExerciseHistoryInstance]
     
-    static var NullUser: LocalUser = LocalUser(id:"(null)", name:"(null)", email: "(null)", exercises: [:])
+    static var NullUser: LocalUser = LocalUser(id:"(null)", name:"(null)", email: "(null)", exerciseHistory: [])
     
     func isNull() -> Bool {
         return (id == "(null)")

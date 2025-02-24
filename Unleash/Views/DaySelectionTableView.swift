@@ -21,7 +21,7 @@ struct DaySelectionTableView: View {
             VStack {
                 ForEach(appDataStore.activeWorkoutProgram!.trainingWeeks[weekNumber - 1].workouts) { workout in
                     DayTableRow(workout: workout, weekNumber: weekNumber)
-                        .padding(.bottom, 110)
+//                        .padding(.bottom, 110)
                 }
             }
         }

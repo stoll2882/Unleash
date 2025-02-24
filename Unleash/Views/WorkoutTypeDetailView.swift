@@ -14,13 +14,13 @@ struct WorkoutTypeDetailView: View {
     @EnvironmentObject var appDataStore: AppDataStorage
     @EnvironmentObject var firebaseManager: FirebaseManager
     
-    var exercises: [UserExercise]
+    var exercises: [ProgramExercise]
     
     var body: some View {
         VStack {
             ScrollView(.vertical) {
                 ForEach(exercises) { exercise in
-                    ExerciseBlockView(exercise: exercise, weekNumber: weekNumber, dayNumber: dayNumber)
+                    ExerciseBlockView(exercise: exercise, padding: 20, weekNumber: weekNumber, dayNumber: dayNumber)
                 }
             }
         }

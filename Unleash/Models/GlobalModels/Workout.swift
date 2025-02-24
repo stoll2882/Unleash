@@ -8,18 +8,20 @@
 import Foundation
 
 class Workout: Identifiable, ObservableObject {
+    var complete: Bool
     var dayNumber: Int
     var focus: String?
-    var warmups: [Exercise]
-    var exercises: [Exercise]
-    var cooldowns: [Exercise]
+    var warmups: [ProgramExercise]
+    var exercises: [ProgramExercise]
+    var cooldowns: [ProgramExercise]
     
-    init(dayNumber: Int, focus: String?, warmups: [Exercise], exercises: [Exercise], cooldowns: [Exercise]) {
+    init(dayNumber: Int, focus: String?, warmups: [ProgramExercise], exercises: [ProgramExercise], cooldowns: [ProgramExercise], complete: Bool) {
         self.dayNumber = dayNumber
         self.focus = focus
         self.warmups = warmups
         self.exercises = exercises
         self.cooldowns = cooldowns
+        self.complete = complete
     }
     
     init(dayNumber: Int) {
@@ -28,5 +30,6 @@ class Workout: Identifiable, ObservableObject {
         self.warmups = []
         self.exercises = []
         self.cooldowns = []
+        self.complete = false
     }
 }

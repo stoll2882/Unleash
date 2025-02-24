@@ -12,9 +12,9 @@ struct DataEntryView: View {
     @EnvironmentObject var firebaseManager: FirebaseManager
     @Environment(\.presentationMode) var presentationMode
     
-    @State private var weight: String = ""
-    @State private var selectedReps: Int = 8  // Default reps
-    @State private var selectedUnit: String = "lb"
+    @State var weight: String
+    @State var selectedReps: Int
+    @State var selectedUnit: String = "lbs"
     
     let setIndex: Int
     let onSave: (Int, Double, Int, String) -> Void
@@ -32,7 +32,7 @@ struct DataEntryView: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(AppConfig.main_neon_green))
+                    .fill(Color(AppConfig.main_light_blue))
                     .shadow(radius: 5)
             )
         }
@@ -44,8 +44,8 @@ struct DataEntryView: View {
     private func selectRepsView() -> some View {
         VStack {
             Text("select your reps")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.white)
+                .font(.custom("Nexa-Heavy", size: 18))
+                .foregroundColor(.black)
                 .padding(.top, 10)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -53,8 +53,8 @@ struct DataEntryView: View {
                     ForEach(availableReps, id: \.self) { rep in
                         VStack {
                             Text("\(rep)")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(selectedReps == rep ? Color(AppConfig.main_bright_pink) : .white)
+                                .font(.custom("Nexa-Heavy", size: 20))
+                                .foregroundColor(selectedReps == rep ? Color(AppConfig.main_bright_pink) : Color(AppConfig.main_dark_blue))
                                 .onTapGesture {
                                     selectedReps = rep
                                 }
@@ -78,8 +78,8 @@ struct DataEntryView: View {
             .frame(height: 50)
             .background(alignment: .bottom) {
                 Rectangle()
-                    .background(.white)
-                    .foregroundStyle(.white)
+                    .background(Color(AppConfig.main_dark_blue))
+                    .foregroundStyle(Color(AppConfig.main_dark_blue))
                     .frame(height: 5)
                     .offset(y: -10)
             }
@@ -91,19 +91,19 @@ struct DataEntryView: View {
     private func weightEntryView() -> some View {
         VStack {
             Text("enter weight used")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.white)
+                .font(.custom("Nexa-Heavy", size: 16))
+                .foregroundColor(.black)
             
             HStack {
                 TextField("Weight", text: $weight)
                     .keyboardType(.decimalPad)
-                    .font(.system(size: 20, weight: .bold))
-                    .frame(width: 100, height: 30)
+                    .font(.custom("Nexa-Heavy", size: 20))
+                    .frame(width: 100, height: 25)
                     .multilineTextAlignment(.center)
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color(AppConfig.main_nude), lineWidth: 3)
+                            .stroke(Color(AppConfig.main_neon_green), lineWidth: 3)
                     )
                     .onChange(of: weight) { newValue in
                         weight = newValue.filter { "0123456789.".contains($0) }
@@ -134,7 +134,8 @@ struct DataEntryView: View {
                     selectedUnit = unit
                 }
             Text(title)
-                .foregroundColor(.white)
+                .font(.custom("Nexa-Heavy", size: 18))
+                .foregroundColor(.black)
         }
     }
 
@@ -144,7 +145,7 @@ struct DataEntryView: View {
             weight = "0"
         } label: {
             Text("I USED BODY WEIGHT")
-                .font(.system(size: 14, weight: .bold))
+                .font(.custom("Nexa-Heavy", size: 14))
                 .foregroundColor(.white)
                 .padding()
                 .frame(width: 220, height: 30)
@@ -163,13 +164,13 @@ struct DataEntryView: View {
             presentationMode.wrappedValue.dismiss()
         } label: {
             Text("TRACK")
-                .font(.system(size: 18, weight: .bold))
+                .font(.custom("Nexa-Heavy", size: 20))
                 .foregroundColor(.white)
                 .padding()
                 .frame(width: 150, height: 30)
                 .background(
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(Color(AppConfig.main_orange))
+                        .fill(Color(AppConfig.main_neon_green))
                 )
         }
         .padding(.bottom, 20)
