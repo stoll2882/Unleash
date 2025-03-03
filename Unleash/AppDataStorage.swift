@@ -96,6 +96,7 @@ class AppDataStorage: ObservableObject {
             "weight": newSet.weight,
             "reps": newSet.reps,
             "unit": newSet.unit,
+            "dateCompleted": dateCompleted,
             "completed": true
         ]
         
@@ -149,6 +150,7 @@ class AppDataStorage: ObservableObject {
                         historyRef.setData([
                             "sets": existingSets,
                             "completed": exerciseCompleted,
+                            "dateCompleted": dateCompleted,
                             "exerciseId": exerciseId,
                             "weekNumber": weekNumber,
                             "dayNumber": dayNumber
@@ -182,6 +184,7 @@ class AppDataStorage: ObservableObject {
                     historyRef.setData([
                         "sets": [newSetData],
                         "completed": exerciseCompleted,
+                        "dateCompleted": dateCompleted,
                         "exerciseId": exerciseId,
                         "weekNumber": weekNumber,
                         "dayNumber": dayNumber
@@ -392,11 +395,14 @@ class AppDataStorage: ObservableObject {
                     let exerciseType = documentData["exerciseType"] as? String
                     let exerciseID = documentData["exerciseID"] as? String
                     let reps = documentData["reps"] as? String
-                    let sets = documentData["sets"] as? String
+                    var sets = documentData["sets"] as? String
                     let rpe = documentData["rpe"] as? String
                     let rest = documentData["rest"] as? String
                     let exerciseGroupNumber = documentData["exerciseGroup"] as? Int
         
+                    if sets == nil {
+                        sets = "1"
+                    }
                     var exerciseName: String = ""
                     var exerciseDescription: String = ""
                     var exerciseVideoURL: String = ""
