@@ -102,7 +102,7 @@ struct WorkoutDayDetailView: View {
                 if !self.exercises.isEmpty && !self.mainExerciseBlocks.isEmpty {
                     switch(selectedTab) {
                     case 0: WorkoutTypeDetailView(exerciseType: "warmup", weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[0])
-                    case 1: WorkoutTypeMainsView(weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[1], mainExerciseBlocks: mainExerciseBlocks).padding(.horizontal, 20)
+                    case 1: WorkoutTypeMainsView(weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[1], mainExerciseBlocks: mainExerciseBlocks)
                     case 2: WorkoutTypeDetailView(exerciseType: "cooldown", weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[2])
                         
                     default:

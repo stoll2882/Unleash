@@ -40,10 +40,10 @@ struct DayTableRow: View {
                     }
                     .padding(.bottom, -3)
                     HStack {
-                        Image("Timer")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                            .foregroundStyle(.black)
+//                        Image("Timer")
+//                            .resizable()
+//                            .frame(width: 20, height: 20)
+//                            .foregroundStyle(.black)
                         Text("60 minutes").font(.custom("Nexa-ExtraLight", size: 20))
                             .foregroundStyle(.black)
                         Spacer()
@@ -71,8 +71,8 @@ struct DayTableRow: View {
             }
             .padding(15)
         }
-        .cornerRadius(20)
         .background(Color(AppConfig.main_light_blue))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .padding(.horizontal, 10)
     }
 }

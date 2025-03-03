@@ -21,6 +21,7 @@ struct WorkoutTypeDetailView: View {
             ScrollView(.vertical) {
                 ForEach(exercises) { exercise in
                     ExerciseBlockView(exercise: exercise, padding: 20, weekNumber: weekNumber, dayNumber: dayNumber)
+                        .padding(.bottom, 10)
                 }
             }
         }

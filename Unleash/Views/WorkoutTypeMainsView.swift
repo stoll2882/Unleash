@@ -47,8 +47,8 @@ struct WorkoutTypeMainsView: View {
                                         .background(Color(AppConfig.main_other_pink))
                                         .foregroundStyle(Color(AppConfig.main_other_pink))
                                         .frame(width: 5)
-                                        .padding(.trailing, -20)
                                         .zIndex(10.0)
+//                                        .padding(.leading, 10)
                                     VStack {
                                         HStack {
                                             Text("SUPERSET")
@@ -57,36 +57,29 @@ struct WorkoutTypeMainsView: View {
                                                 .bold()
                                             Spacer()
                                         }
-                                        .padding(.trailing, -25)
+//                                        .padding(.leading, -10)
                                         ForEach(mainExerciseBlocks[key] ?? [], id: \.exerciseID) { exercise in
-                                            ExerciseBlockView(exercise: exercise, padding: 10, weekNumber: weekNumber, dayNumber: dayNumber)
+                                            ExerciseBlockView(exercise: exercise, padding: 5, weekNumber: weekNumber, dayNumber: dayNumber)
                                                 .zIndex(-10.0)
                                         }
                                     }
                                 }
+                                .padding(.top, 20)
+                                .padding(.leading, 20)
+                                .padding(.bottom, 20)
                             } else {
                                 ForEach(mainExerciseBlocks[key] ?? [], id: \.exerciseID) { exercise in
                                     ExerciseBlockView(exercise: exercise, padding: 20, weekNumber: weekNumber, dayNumber: dayNumber)
                                 }
                             }
-                            //                        if let exercises = mainExerciseBlocks[key], exercises.count > 1 {
-                            //                            HStack {
-                            //                                Text("SUPERSET")
-                            //                                    .font(.system(size: 16))
-                            //                                    .bold()
-                            //                                Spacer()
-                            //                            }
-                            //                        }
-                            //                        ForEach(mainExerciseBlocks[key] ?? [], id: \.exerciseID) { exercise in
-                            //                            ExerciseBlockView(exercise: exercise, weekNumber: weekNumber, dayNumber: dayNumber)
-                            //                        }
                         }
-//                        .clipShape(RoundedRectangle(cornerRadius: 20, style: RoundedCornerStyle))
-                        .padding(20)
-                        .frame(width: geometry.size.width)
                         .background(Color(AppConfig.main_light_blue))
+                        .frame(width: geometry.size.width - 40)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .padding(.bottom, 10)
                     }
                 }
+                .padding(.leading, 20)
             }
         }
     }

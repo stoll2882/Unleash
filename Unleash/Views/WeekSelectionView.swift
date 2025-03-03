@@ -19,6 +19,47 @@ import SwiftUI
 //    }
 //}
 
+//struct UnderlinePicker: View {
+//    @Binding var selection: Int
+//    let workoutWeeks: [WorkoutWeek]
+//
+//    var body: some View {
+//        HStack(spacing: 20) {
+//            ForEach(getOptions(), id: \.self) { option in
+//                HStack {
+//                    VStack {
+//                        Text("Week \(option)")
+//                            .bold()
+//                            .foregroundColor(selection == option ? Color(AppConfig.main_light_blue) : Color(AppConfig.main_other_pink) )
+//                        if selection == option {
+//                            Spacer()
+//                            Rectangle()
+//                                .background(Color(AppConfig.main_light_blue))
+//                                .foregroundStyle(Color(AppConfig.main_light_blue))
+//                                .frame(height: 5)
+//                        }
+//                        if selection != option {
+//                            Spacer()
+//                        }
+//                    }
+//                    .frame(height: 30)
+//                    .onTapGesture {
+//                        selection = option
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    
+//    func getOptions() -> [Int] {
+//        var options: [Int] = []
+//        for week in workoutWeeks {
+//            options.append(week.weekNumber)
+//        }
+//        return options
+//    }
+//}
+
 struct UnderlinePicker: View {
     @Binding var selection: Int
     let workoutWeeks: [WorkoutWeek]
@@ -26,37 +67,29 @@ struct UnderlinePicker: View {
     var body: some View {
         HStack(spacing: 20) {
             ForEach(getOptions(), id: \.self) { option in
-                HStack {
-                    VStack {
-                        Text("Week \(option)")
-                            .bold()
-                            .foregroundColor(selection == option ? Color(AppConfig.main_light_blue) : Color(AppConfig.main_other_pink) )
-                        if selection == option {
-                            Spacer()
-                            Rectangle()
-                                .background(Color(AppConfig.main_light_blue))
-                                .foregroundStyle(Color(AppConfig.main_light_blue))
-                                .frame(height: 5)
-                        }
-                        if selection != option {
-                            Spacer()
-                        }
-                    }
-                    .frame(height: 30)
-                    .onTapGesture {
-                        selection = option
-                    }
+                VStack(spacing: 5) { // Reduce unwanted spacer effect
+                    Text("Week \(option)")
+                        .bold()
+                        .foregroundColor(selection == option ? Color(AppConfig.main_light_blue) : Color(AppConfig.main_other_pink))
+                        .padding(.bottom, 5)
+                    
+                    Rectangle()
+                        .frame(height: 5) // Fixed underline height
+                        .frame(maxWidth: .infinity)
+                        .foregroundColor(selection == option ? Color.white : Color.clear)
+                }
+                .contentShape(Rectangle()) // Ensures the whole area is tappable
+                .onTapGesture {
+                    selection = option
                 }
             }
         }
+        .frame(height: 50)
+        .frame(maxWidth: .infinity)
     }
-    
+
     func getOptions() -> [Int] {
-        var options: [Int] = []
-        for week in workoutWeeks {
-            options.append(week.weekNumber)
-        }
-        return options
+        workoutWeeks.map { $0.weekNumber }
     }
 }
 
@@ -68,21 +101,25 @@ struct WeekSelectionView: View {
     
     var body: some View {
         VStack {
-            Image("UnleashOrange")
-                .resizable()
-                .frame(width: 280, height: 50)
-                .padding(.vertical, 5)
-            ScrollView(.horizontal) {
+//            Image("UnleashOrange") 
+//                .resizable()
+//                .frame(width: 280, height: 50)
+//                .padding(.vertical, 5)
+            Text("Week Number \(selectedTab)")
+                .bold()
+                .font(.custom("Nexa-Heavy", size: 40))
+                .foregroundStyle(Color(.white))
+            
+            ScrollView(.horizontal, showsIndicators: false) {
                 UnderlinePicker(selection: $selectedTab, workoutWeeks: trainingWeeks)
             }
-            .frame(height: 50)
+            .frame(height: 32)
             .padding(.horizontal, 20)
             .background(alignment: .bottom) {
                 Rectangle()
                     .background(Color(AppConfig.main_other_pink))
                     .foregroundStyle(Color(AppConfig.main_other_pink))
                     .frame(height: 5)
-                    .offset(y: -10)
             }
 
             switch(selectedTab) {
@@ -120,118 +157,3 @@ struct CustomPickerItem: View {
             .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
-
-
-
-//                Button {
-//
-//                } label: {
-//                    Text("Week 1")
-//                }
-//                .tag(0)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 0))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 2")
-//                }
-//                .tag(1)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 1))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 3")
-//                }
-//                .tag(2)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 2))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 2")
-//                }
-//                .tag(3)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 3))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 3")
-//                }
-//                .tag(4)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 4))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 4")
-//                }
-//                .tag(5)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 5))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 5")
-//                }
-//                .tag(6)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 6))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 6")
-//                }
-//                .tag(7)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 7))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 7")
-//                }
-//                .tag(8)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 8))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 8")
-//                }
-//                .tag(9)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 9))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 9")
-//                }
-//                .tag(10)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 10))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 10")
-//                }
-//                .tag(11)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 11))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 11")
-//                }
-//                .tag(12)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 12))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 12")
-//                }
-//                .tag(13)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 13))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 13")
-//                }
-//                .tag(14)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 14))
-//                Button {
-//
-//                } label: {
-//                    Text("Week 14")
-//                }
-//                .tag(15)
-//                .buttonStyle(WeekSelectionButtonStyle(isSelected: selectedTab == 15))
