@@ -24,7 +24,7 @@ struct ExpandableTextView: View {
                 Button(action: { isExpanded.toggle() }) {
                     Text(isExpanded ? "Show Less" : "Show More")
                         .font(.caption)
-                        .foregroundColor(Color(AppConfig.main_bright_pink))
+                        .foregroundColor(Color(AppConfig.Styles.Colors.main_bright_pink))
                 }
             }
         }

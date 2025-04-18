@@ -27,27 +27,16 @@ struct DayTableRow: View {
                 VStack {
                     HStack {
                         Text("Day \(workout.dayNumber)").bold()
-                            .foregroundStyle(Color(AppConfig.main_neon_green))
-                            .font(.custom("Nexa-Heavy", size: 40))
+                            .textDayTitle()
                         Spacer()
                     }
                     .padding(.bottom, -10)
                     HStack {
-                        Text(workout.focus!).bold()
-                            .foregroundStyle(.black)
-                            .font(.custom("Nexa-Heavy", size: 25))
+                        Text(workout.focus!)
+                            .textMain()
                         Spacer()
                     }
                     .padding(.bottom, -3)
-                    HStack {
-//                        Image("Timer")
-//                            .resizable()
-//                            .frame(width: 20, height: 20)
-//                            .foregroundStyle(.black)
-                        Text("60 minutes").font(.custom("Nexa-ExtraLight", size: 20))
-                            .foregroundStyle(.black)
-                        Spacer()
-                    }
                 }
                 .frame(alignment: .leading)
                 .layoutPriority(1)
@@ -57,12 +46,12 @@ struct DayTableRow: View {
                         Image("Complete")
                             .resizable()
                             .frame(width: 40, height: 40)
-                            .foregroundStyle(Color(AppConfig.main_dark_blue))
+                            .foregroundStyle(Color(AppConfig.Styles.Colors.main_dark_blue))
                     } else {
                         Image("Incomplete")
                             .resizable()
                             .frame(width: 40, height: 40)
-                            .foregroundStyle(Color(AppConfig.main_dark_blue))
+                            .foregroundStyle(Color(AppConfig.Styles.Colors.main_dark_blue))
                     }
                     Spacer()
                 }
@@ -71,7 +60,7 @@ struct DayTableRow: View {
             }
             .padding(15)
         }
-        .background(Color(AppConfig.main_light_blue))
+        .background(Color(AppConfig.Styles.Colors.main_light_blue))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .padding(.horizontal, 10)
     }

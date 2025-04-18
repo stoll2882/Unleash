@@ -36,8 +36,10 @@
 		22BABC942D4F029800ED652C /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 22BABC932D4F029800ED652C /* FirebaseAnalytics */; };
 		22BABC962D4F029800ED652C /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = 22BABC952D4F029800ED652C /* FirebaseAnalyticsOnDeviceConversion */; };
 		22BABC982D4F029800ED652C /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 22BABC972D4F029800ED652C /* FirebaseAnalyticsWithoutAdIdSupport */; };
-		22BABC9A2D4F029800ED652C /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 22BABC992D4F029800ED652C /* FirebaseAppCheck */; };
+		22BABC9A2D4F029800ED652C /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; platformFilters = (macos, xros, ); productRef = 22BABC992D4F029800ED652C /* FirebaseAppCheck */; };
 		22BABC9C2D4F029800ED652C /* FirebaseAppDistribution-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = 22BABC9B2D4F029800ED652C /* FirebaseAppDistribution-Beta */; };
+		6189F37F2DB1CF6E0020E0B4 /* .gitignore in Sources */ = {isa = PBXBuildFile; fileRef = 6189F37E2DB1CF690020E0B4 /* .gitignore */; };
+		6189F3FE2DB1DE340020E0B4 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6189F3FD2DB1DE340020E0B4 /* Launch Screen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +63,8 @@
 		22BABC482D4EE92800ED652C /* Unleash.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Unleash.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		22BABC5E2D4EE92900ED652C /* UnleashTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UnleashTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		22BABC682D4EE92900ED652C /* UnleashUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UnleashUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6189F37E2DB1CF690020E0B4 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		6189F3FD2DB1DE340020E0B4 /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -153,6 +157,8 @@
 		22BABC3F2D4EE92800ED652C = {
 			isa = PBXGroup;
 			children = (
+				6189F3FD2DB1DE340020E0B4 /* Launch Screen.storyboard */,
+				6189F37E2DB1CF690020E0B4 /* .gitignore */,
 				22BABC4A2D4EE92800ED652C /* Unleash */,
 				22BABC612D4EE92900ED652C /* UnleashTests */,
 				22BABC6B2D4EE92900ED652C /* UnleashUITests */,
@@ -325,6 +331,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6189F3FE2DB1DE340020E0B4 /* Launch Screen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -349,6 +356,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6189F37F2DB1CF6E0020E0B4 /* .gitignore in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

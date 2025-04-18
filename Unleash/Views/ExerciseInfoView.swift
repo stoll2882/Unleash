@@ -26,7 +26,7 @@ struct ExerciseInfoView: View {
                         .frame(width: 35, height: 35)
                     Text("\(exercise.exerciseName!)")
                         .font(.custom("Nexa-Heavy", size: 25))
-                        .foregroundStyle(Color(AppConfig.main_other_pink))
+                        .foregroundStyle(Color(AppConfig.Styles.Colors.main_other_pink))
                         .bold()
                         .padding()
                     Spacer()
@@ -44,7 +44,7 @@ struct ExerciseInfoView: View {
             .padding(.horizontal, 20)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(AppConfig.main_light_blue))
+                    .fill(Color(AppConfig.Styles.Colors.main_light_blue))
                     .shadow(radius: 5)
             )
             Spacer()

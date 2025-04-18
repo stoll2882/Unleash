@@ -32,7 +32,7 @@ struct DataEntryView: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(AppConfig.main_light_blue))
+                    .fill(Color(AppConfig.Styles.Colors.main_light_blue))
                     .shadow(radius: 5)
             )
         }
@@ -54,15 +54,15 @@ struct DataEntryView: View {
                         VStack {
                             Text("\(rep)")
                                 .font(.custom("Nexa-Heavy", size: 20))
-                                .foregroundColor(selectedReps == rep ? Color(AppConfig.main_bright_pink) : Color(AppConfig.main_dark_blue))
+                                .foregroundColor(selectedReps == rep ? Color(AppConfig.Styles.Colors.main_bright_pink) : Color(AppConfig.Styles.Colors.main_dark_blue))
                                 .onTapGesture {
                                     selectedReps = rep
                                 }
                             if selectedReps == rep {
                                 Spacer()
                                 Rectangle()
-                                    .background(Color(AppConfig.main_bright_pink))
-                                    .foregroundStyle(Color(AppConfig.main_bright_pink))
+                                    .background(Color(AppConfig.Styles.Colors.main_bright_pink))
+                                    .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
                                     .frame(height: 5)
                                     .offset(y: -3.5)
                             }
@@ -78,8 +78,8 @@ struct DataEntryView: View {
             .frame(height: 50)
             .background(alignment: .bottom) {
                 Rectangle()
-                    .background(Color(AppConfig.main_dark_blue))
-                    .foregroundStyle(Color(AppConfig.main_dark_blue))
+                    .background(Color(AppConfig.Styles.Colors.main_dark_blue))
+                    .foregroundStyle(Color(AppConfig.Styles.Colors.main_dark_blue))
                     .frame(height: 5)
                     .offset(y: -10)
             }
@@ -103,7 +103,7 @@ struct DataEntryView: View {
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color(AppConfig.main_neon_green), lineWidth: 3)
+                            .stroke(Color(AppConfig.Styles.Colors.main_neon_green), lineWidth: 3)
                     )
                     .onChange(of: weight) { newValue in
                         weight = newValue.filter { "0123456789.".contains($0) }
@@ -127,9 +127,9 @@ struct DataEntryView: View {
     private func unitButton(title: String, unit: String) -> some View {
         HStack {
             Circle()
-                .fill(selectedUnit == unit ? Color(AppConfig.main_bright_pink) : Color.clear)
+                .fill(selectedUnit == unit ? Color(AppConfig.Styles.Colors.main_bright_pink) : Color.clear)
                 .frame(width: 15, height: 15)
-                .overlay(Circle().stroke(Color(AppConfig.main_bright_pink), lineWidth: 2))
+                .overlay(Circle().stroke(Color(AppConfig.Styles.Colors.main_bright_pink), lineWidth: 2))
                 .onTapGesture {
                     selectedUnit = unit
                 }
@@ -151,7 +151,7 @@ struct DataEntryView: View {
                 .frame(width: 220, height: 30)
                 .background(
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(AppConfig.main_nude).opacity(0.8))
+                        .fill(Color(AppConfig.Styles.Colors.main_nude).opacity(0.8))
                 )
         }
     }
@@ -170,7 +170,7 @@ struct DataEntryView: View {
                 .frame(width: 150, height: 30)
                 .background(
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(Color(AppConfig.main_neon_green))
+                        .fill(Color(AppConfig.Styles.Colors.main_neon_green))
                 )
         }
         .padding(.bottom, 20)

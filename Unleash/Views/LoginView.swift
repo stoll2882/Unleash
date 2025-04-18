@@ -66,7 +66,7 @@ struct LoginView: View {
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                             .padding()
-                            .background(Color(AppConfig.main_orange)) // Button color
+                            .background(Color(AppConfig.Styles.Colors.main_orange)) // Button color
                             .cornerRadius(10)
                     }
                 }
@@ -77,7 +77,7 @@ struct LoginView: View {
         }
         .padding(20)
             .ignoresSafeArea()
-            .background(Color(AppConfig.main_mint_green))
+            .background(Color(AppConfig.Styles.Colors.main_mint_green))
     }
     
     private func storeUserInformation() {

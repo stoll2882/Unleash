@@ -7,5 +7,7 @@
 		<string>Nexa-Heavy.ttf</string>
 		<string>Next-ExtraLight.ttf</string>
 	</array>
+    <key>UILaunchStoryboardName</key>
+    <string>Launch Screen</string>
 </dict>
 </plist>

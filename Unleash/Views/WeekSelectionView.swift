@@ -60,89 +60,40 @@ import SwiftUI
 //    }
 //}
 
-struct UnderlinePicker: View {
-    @Binding var selection: Int
-    let workoutWeeks: [WorkoutWeek]
-
-    var body: some View {
-        HStack(spacing: 20) {
-            ForEach(getOptions(), id: \.self) { option in
-                VStack(spacing: 5) { // Reduce unwanted spacer effect
-                    Text("Week \(option)")
-                        .bold()
-                        .foregroundColor(selection == option ? Color(AppConfig.main_light_blue) : Color(AppConfig.main_other_pink))
-                        .padding(.bottom, 5)
-                    
-                    Rectangle()
-                        .frame(height: 5) // Fixed underline height
-                        .frame(maxWidth: .infinity)
-                        .foregroundColor(selection == option ? Color.white : Color.clear)
-                }
-                .contentShape(Rectangle()) // Ensures the whole area is tappable
-                .onTapGesture {
-                    selection = option
-                }
-            }
-        }
-        .frame(height: 50)
-        .frame(maxWidth: .infinity)
-    }
-
-    func getOptions() -> [Int] {
-        workoutWeeks.map { $0.weekNumber }
-    }
-}
-
 struct WeekSelectionView: View {
     @State var selectedTab: Int = 1
     @State var trainingWeeks: [WorkoutWeek]
     @EnvironmentObject var appDataStore: AppDataStorage
     @EnvironmentObject var firebaseManager: FirebaseManager
+    @State var currentSelection = 0
+    
+    func getSelections() -> [String] {
+        var selections: [String] = []
+        for week in trainingWeeks {
+            selections.append("Week \(week.weekNumber)")
+        }
+        return selections
+    }
     
     var body: some View {
         VStack {
-//            Image("UnleashOrange") 
-//                .resizable()
-//                .frame(width: 280, height: 50)
-//                .padding(.vertical, 5)
-            Text("Week Number \(selectedTab)")
-                .bold()
-                .font(.custom("Nexa-Heavy", size: 40))
-                .foregroundStyle(Color(.white))
+            SelectorView(currentSelection: $selectedTab, options: getSelections(), scrollable: true)
+                .padding(.top)
             
-            ScrollView(.horizontal, showsIndicators: false) {
-                UnderlinePicker(selection: $selectedTab, workoutWeeks: trainingWeeks)
-            }
-            .frame(height: 32)
-            .padding(.horizontal, 20)
-            .background(alignment: .bottom) {
-                Rectangle()
-                    .background(Color(AppConfig.main_other_pink))
-                    .foregroundStyle(Color(AppConfig.main_other_pink))
-                    .frame(height: 5)
-            }
-
-            switch(selectedTab) {
-            case 1: DaySelectionTableView(weekNumber: 1)
-            case 2: DaySelectionTableView(weekNumber: 2)
-            case 3: DaySelectionTableView(weekNumber: 3)
-            case 4: DaySelectionTableView(weekNumber: 4)
-            case 5: DaySelectionTableView(weekNumber: 5)
-            case 6: DaySelectionTableView(weekNumber: 6)
-            case 7: DaySelectionTableView(weekNumber: 7)
-            case 8: DaySelectionTableView(weekNumber: 8)
-            case 9: DaySelectionTableView(weekNumber: 9)
-            case 10: DaySelectionTableView(weekNumber: 10)
-            case 11: DaySelectionTableView(weekNumber: 11)
-            case 12: DaySelectionTableView(weekNumber: 12)
-            case 13: DaySelectionTableView(weekNumber: 13)
-            case 14: DaySelectionTableView(weekNumber: 14)
-            default:
-                DaySelectionTableView(weekNumber: 1)
-            }
+            DaySelectionTableView(weekNumber: selectedTab)
+            
             Spacer()
         }
-        .background(Color(AppConfig.main_background))
+        .background(Color(AppConfig.Styles.Colors.main_background))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Image("UnleashOrange")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 32)
+            }
+        }
     }
 }
 

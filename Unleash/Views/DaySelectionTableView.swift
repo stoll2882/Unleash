@@ -11,7 +11,7 @@ struct DaySelectionTableView: View {
     @EnvironmentObject var appDataStore: AppDataStorage
     @EnvironmentObject var firebaseManager: FirebaseManager
     
-    @State var weekNumber: Int
+    var weekNumber: Int
     @State var selectedDay: Int = 0
     
     var body: some View {

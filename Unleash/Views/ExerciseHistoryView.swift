@@ -104,7 +104,7 @@ struct ExerciseHistoryView: View {
                         .frame(width: 40, height: 35)
                     Text("Set History")
                         .font(.custom("Nexa-Heavy", size: 25))
-                        .foregroundStyle(Color(AppConfig.main_other_pink))
+                        .foregroundStyle(Color(AppConfig.Styles.Colors.main_other_pink))
                         .bold()
                         .padding()
                     Spacer()
@@ -139,7 +139,7 @@ struct ExerciseHistoryView: View {
                                                     .padding(5)
                                             }
                                             .frame(width: 100)
-                                            .background(Color(AppConfig.main_dark_blue))
+                                            .background(Color(AppConfig.Styles.Colors.main_dark_blue))
                                             .padding(.trailing, 5)
                                         }
                                     }
@@ -153,7 +153,7 @@ struct ExerciseHistoryView: View {
             .padding(.horizontal, 20)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(AppConfig.main_light_blue))
+                    .fill(Color(AppConfig.Styles.Colors.main_light_blue))
                     .shadow(radius: 5)
             )
             Spacer()

@@ -44,8 +44,8 @@ struct WorkoutTypeMainsView: View {
                             if let exercises = mainExerciseBlocks[key], exercises.count > 1 {
                                 HStack {
                                     Rectangle()
-                                        .background(Color(AppConfig.main_other_pink))
-                                        .foregroundStyle(Color(AppConfig.main_other_pink))
+                                        .background(Color(AppConfig.Styles.Colors.main_other_pink))
+                                        .foregroundStyle(Color(AppConfig.Styles.Colors.main_other_pink))
                                         .frame(width: 5)
                                         .zIndex(10.0)
 //                                        .padding(.leading, 10)
@@ -53,7 +53,7 @@ struct WorkoutTypeMainsView: View {
                                         HStack {
                                             Text("SUPERSET")
                                                 .font(.custom("Nexa-Heavy", size: 25))
-                                                .foregroundStyle(Color(AppConfig.main_other_pink))
+                                                .foregroundStyle(Color(AppConfig.Styles.Colors.main_other_pink))
                                                 .bold()
                                             Spacer()
                                         }
@@ -65,7 +65,7 @@ struct WorkoutTypeMainsView: View {
                                     }
                                 }
                                 .padding(.top, 20)
-                                .padding(.leading, 20)
+                                .padding(.leading, AppConfig.Styles.HorizontalMargin)
                                 .padding(.bottom, 20)
                             } else {
                                 ForEach(mainExerciseBlocks[key] ?? [], id: \.exerciseID) { exercise in
@@ -73,13 +73,13 @@ struct WorkoutTypeMainsView: View {
                                 }
                             }
                         }
-                        .background(Color(AppConfig.main_light_blue))
-                        .frame(width: geometry.size.width - 40)
+                        .background(Color(AppConfig.Styles.Colors.main_light_blue))
+                        .frame(width: geometry.size.width - AppConfig.Styles.HorizontalMargin * 2)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                         .padding(.bottom, 10)
                     }
                 }
-                .padding(.leading, 20)
+                .padding(.leading, AppConfig.Styles.HorizontalMargin)
             }
         }
     }

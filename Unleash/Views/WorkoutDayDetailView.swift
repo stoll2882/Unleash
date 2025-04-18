@@ -8,41 +8,6 @@
 import SwiftUI
 import Collections
 
-struct UnderlineExerciseTypePicker: View {
-    @Binding var selection: Int
-    let workoutTypes: [Int]
-    var labels: [String]
-    var width: Double
-    
-    var body: some View {
-        HStack {
-            ForEach(workoutTypes, id: \.self) { option in
-                VStack {
-                    Text("\(labels[option])")
-                        .bold()
-                        .foregroundColor(selection == option ? Color(AppConfig.main_light_blue) : .black)
-                        .frame(width: (width/Double(workoutTypes.count) - 20.0/3.0))
-                        .onTapGesture {
-                            selection = option
-                        }
-                    if selection == option {
-                        Spacer()
-                        Rectangle()
-                            .background(Color(AppConfig.main_light_blue))
-                            .foregroundStyle(Color(AppConfig.main_light_blue))
-                            .frame(height: 5)
-                    }
-                    if selection != option {
-                        Spacer()
-                    }
-                }
-            }
-        }
-        .frame(height: 30)
-        .padding(.horizontal, 20)
-    }
-}
-
 struct WorkoutDayDetailView: View {
     @State var workoutData: Workout
     var weekNumber: Int
@@ -53,7 +18,7 @@ struct WorkoutDayDetailView: View {
     @State var exercises: [[ProgramExercise]] = []
     @State var mainExerciseBlocks: OrderedDictionary<Int, [ProgramExercise]> = [:]
     
-    @State var selectedTab: Int = 0
+    @State var selectedTab: Int = 1
     
     func loadExercises(firebaseManager: FirebaseManager) {
         let exercisesIDs = workoutData.warmups + workoutData.exercises + workoutData.cooldowns
@@ -84,23 +49,13 @@ struct WorkoutDayDetailView: View {
     var body: some View {
         GeometryReader { geometry in
             VStack {
-                WorkoutLabel(weekNumber: weekNumber, dayNumber: dayNumber, workoutName: workoutData.focus!)
-                UnderlineExerciseTypePicker(selection: $selectedTab, workoutTypes: [0,1,2], labels: ["Warmup", "Main", "Cooldown"], width: geometry.size.width)
-                    .frame(height: 50)
-                    .padding(.horizontal, 20)
-                    .background(alignment: .bottom) {
-                        Rectangle()
-                            .background(Color(AppConfig.main_other_pink))
-                            .foregroundStyle(Color(AppConfig.main_other_pink))
-                            .frame(height: 5)
-                            .offset(y: -10)
-                    }
-                    .padding(.bottom, 20)
+                SelectorView(currentSelection: $selectedTab, options: ["Warmup", "Main", "Cooldown"] )
+                
                 if self.exercises.isEmpty || self.mainExerciseBlocks.isEmpty {
                     Spacer()
                 }
                 if !self.exercises.isEmpty && !self.mainExerciseBlocks.isEmpty {
-                    switch(selectedTab) {
+                    switch(selectedTab-1) {
                     case 0: WorkoutTypeDetailView(exerciseType: "warmup", weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[0])
                     case 1: WorkoutTypeMainsView(weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[1], mainExerciseBlocks: mainExerciseBlocks)
                     case 2: WorkoutTypeDetailView(exerciseType: "cooldown", weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[2])
@@ -116,7 +71,14 @@ struct WorkoutDayDetailView: View {
                 loadExercises(firebaseManager: firebaseManager)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .background(Color(AppConfig.main_background))
+            .background(Color(AppConfig.Styles.Colors.main_background))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("WEEK \(weekNumber) | DAY \(dayNumber)")
+                        .textMenuItem()
+                }
+            }
         }
         .onAppear(perform: {
             loadExercises(firebaseManager: firebaseManager)

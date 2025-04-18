@@ -116,12 +116,12 @@ struct ExerciseBlockView: View {
                         .font(.custom("Nexa-Heavy", size: 12))
                 } else if set.weight != nil {
                     Text("\(set.reps ?? 0) | \(set.weight ?? 0, specifier: "%.1f") \(set.unit ?? "")")
-                        .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(.white) : Color(AppConfig.main_dark_blue))
+                        .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(.white) : Color(AppConfig.Styles.Colors.main_dark_blue))
                         .bold()
                         .font(.custom("Nexa-Heavy", size: 12))
                 } else {
                     Text("\(self.exercise.reps!)")
-                        .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(.white) : Color(AppConfig.main_dark_blue))
+                        .foregroundColor((selectedButtons.contains(index) || isExerciseComplete) ? Color(.white) : Color(AppConfig.Styles.Colors.main_dark_blue))
                         .bold()
                         .font(.custom("Nexa-Heavy", size: 12))
                 }
@@ -154,13 +154,13 @@ struct ExerciseBlockView: View {
                             if isExerciseComplete {
                                 Image("Complete")
                                     .resizable()
-                                    .foregroundStyle(Color(AppConfig.main_bright_pink))
+                                    .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
                                     .frame(width: 40, height: 40)
                                     .padding(.leading, 10)
                             } else {
                                 Image("Incomplete")
                                     .resizable()
-                                    .foregroundStyle(Color(AppConfig.main_bright_pink))
+                                    .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
                                     .frame(width: 40, height: 40)
                                     .padding(.leading, 10)                            }
                         }
@@ -177,7 +177,7 @@ struct ExerciseBlockView: View {
                     } label: {
                         Image("GreenPlayButton")
                             .resizable()
-                            .foregroundStyle(Color(AppConfig.main_bright_pink))
+                            .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
                             .frame(width: 35, height: 35)
                     }
                     .padding(.trailing, 10)
@@ -187,7 +187,7 @@ struct ExerciseBlockView: View {
                 } label: {
                     Image("GreenFolder")
                         .resizable()
-                        .foregroundStyle(Color(AppConfig.main_bright_pink))
+                        .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
                         .frame(width: 40, height: 35)
                 }
                 .padding(.trailing, 5)
@@ -197,7 +197,7 @@ struct ExerciseBlockView: View {
                     } label: {
                         Image("GreenInfoIcon")
                             .resizable()
-                            .foregroundStyle(Color(AppConfig.main_bright_pink))
+                            .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
                             .frame(width: 35, height: 35)
                     }
                     .padding(.trailing, 5)
@@ -209,7 +209,7 @@ struct ExerciseBlockView: View {
                         .padding(.horizontal, 5)
                         .overlay(content: {
                             RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color(AppConfig.main_neon_green), lineWidth: 3)
+                                .stroke(Color(AppConfig.Styles.Colors.main_neon_green), lineWidth: 3)
                         })
                         .padding(.trailing, 5)
                 }
@@ -220,7 +220,7 @@ struct ExerciseBlockView: View {
                         .padding(.horizontal, 5)
                         .overlay(content: {
                             RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color(AppConfig.main_neon_green), lineWidth: 3)
+                                .stroke(Color(AppConfig.Styles.Colors.main_neon_green), lineWidth: 3)
                         })
                         .padding(.trailing, 5)
                     }
@@ -255,7 +255,7 @@ struct ExerciseBlockView: View {
 //            }
         }
         .padding(CGFloat(padding))
-        .background(Color(AppConfig.main_light_blue))
+        .background(Color(AppConfig.Styles.Colors.main_light_blue))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .fullScreenCover(isPresented: $isPresentingVideo) {
             if exercise.exerciseVideoURL != nil {
@@ -296,119 +296,8 @@ struct ExerciseBlockView: View {
     }
 }
 
-enum SheetType: Identifiable {
-    case dataEntry(SetIndexWrapper)
-    case history
-    case exerciseInfo
-    
-    var id: String {
-        switch self {
-        case .dataEntry(let setIndex):
-            return "dataEntry_\(setIndex.id)"
-        case .history:
-            return "history"
-        case .exerciseInfo:
-            return "exerciseInfo"
-        }
-    }
-}
-
-//import SwiftUI
-//
-struct WeightEntryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .bold()
-            .foregroundColor(Color(AppConfig.main_neon_green))
-            .frame(width: 100, height: 20)
-            .overlay(
-                Rectangle()
-                    .fill(Color(AppConfig.main_neon_green))
-                    .frame(height: 2)
-                    .offset(y: 10),
-                alignment: .bottom
-            )
-    }
-}
-
-struct PlayButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding()
-            .opacity(configuration.isPressed ? 0.5 : 1)
-    }
-}
-
-struct CardioButtonStyle: ButtonStyle {
-    @Binding var selectedSetIndex: SetIndexWrapper?
-    let index: Int
-    @Binding var isExerciseComplete: Bool
-    var isSetComplete: Bool
-    
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .frame(width: 80, height: 30)
-            .background(isSetComplete ? Color(AppConfig.main_dark_blue) : Color(.white))
-            .foregroundColor(isSetComplete ? Color(.white): Color(AppConfig.main_dark_blue))
-            .border(Color(AppConfig.main_dark_blue), width: 3)
-            .cornerRadius(5)
-            .opacity(configuration.isPressed ? 0.5 : 1)
-            .onTapGesture {
-                selectedSetIndex = SetIndexWrapper(id: index)
-            }
-    }
-}
-
-struct SetsButtonStyle: ButtonStyle {
-    @Binding var selectedButtons: Set<Int>
-    @Binding var isShowingEntryView: Bool
-    @Binding var selectedSetIndex: SetIndexWrapper?
-    let index: Int
-    @Binding var isExerciseComplete: Bool
-    @Binding var activeSheet: SheetType?
-    var isSetComplete: Bool
-    
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .frame(width: 80, height: 30)
-            .background((selectedButtons.contains(index) || isSetComplete) ? Color(AppConfig.main_dark_blue) : Color(.white))
-            .foregroundColor((selectedButtons.contains(index) || isSetComplete) ? Color(.white): Color(AppConfig.main_dark_blue))
-            .border(Color(AppConfig.main_dark_blue), width: 3)
-            .cornerRadius(5)
-            .opacity(configuration.isPressed ? 0.5 : 1)
-            .onTapGesture {
-                selectedSetIndex = SetIndexWrapper(id: index)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    activeSheet = .dataEntry(selectedSetIndex!)
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    isShowingEntryView = true
-                }
-//                selectedButtons.insert(index)
-            }
-    }
-}
-
 struct SetIndexWrapper: Identifiable {
     let id: Int
 }
 
-struct TransparentSheetModifier: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> UIViewController {
-        let controller = UIViewController()
-        DispatchQueue.main.async {
-            if let presentedController = controller.presentedViewController?.view.superview {
-                presentedController.backgroundColor = UIColor.clear  // ✅ Make background transparent
-            }
-        }
-        return controller
-    }
 
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
-}
-
-extension View {
-    func transparentSheet() -> some View {
-        self.background(TransparentSheetModifier())  // ✅ Apply transparency
-    }
-}

@@ -22,7 +22,7 @@ struct CircularCompletionBar: View {
                 // Progress Circle (Fills according to progress)
                 Circle()
                     .trim(from: 0.0, to: progress) // Only draw the fraction needed
-                    .stroke(Color(AppConfig.main_neon_green), style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .stroke(Color(AppConfig.Styles.Colors.main_neon_green), style: StrokeStyle(lineWidth: 10, lineCap: .round))
                     .rotationEffect(Angle(degrees: -90)) // Start from the top
                     .animation(.easeInOut(duration: 0.5), value: progress)
                 
@@ -30,7 +30,7 @@ struct CircularCompletionBar: View {
                 Text("\(Int(progress * 100))%")
                     .font(.title)
                     .bold()
-                    .foregroundColor(Color(AppConfig.main_neon_green))
+                    .foregroundColor(Color(AppConfig.Styles.Colors.main_neon_green))
             }
             .frame(width: 80, height: 80) // Adjust the size of the circle
             .padding()

@@ -11,6 +11,7 @@ import AVKit
 struct MainWelcomeView: View {
     @EnvironmentObject var appDataStore: AppDataStorage
     @EnvironmentObject var firebaseManager: FirebaseManager
+    @State var showingLogoutPopup = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -19,14 +20,32 @@ struct MainWelcomeView: View {
                     VStack {
                         ZStack {
                             Rectangle()
-                                .background(Color(AppConfig.main_background))
-                                .foregroundStyle(Color(AppConfig.main_background))
+                                .background(Color(AppConfig.Styles.Colors.main_background))
+                                .foregroundStyle(Color(AppConfig.Styles.Colors.main_background))
                                 .edgesIgnoringSafeArea(.all)
                                 .frame(width: geometry.size.width, height: 50)
                             Image("UnleashOrange")
                                 .resizable()
                                 .frame(width: 250, height: 50)
                                 .padding(.horizontal, 50)
+                            HStack {
+                                Spacer()
+                                Button {
+                                    showingLogoutPopup = true
+                                    /*do {
+                                        try firebaseManager.auth.signOut()
+                                    } catch {
+                                        print("Error signing out")
+                                    }*/
+                                } label: {
+                                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                                        .padding(.trailing, 20)
+                                        .fontWeight(.bold)
+                                        .font(.system(size: 25))
+                                }
+                                .background(.clear)
+                                .cornerRadius(20)
+                            }
                         }
                         .frame(alignment: .top)
                         Spacer()
@@ -80,7 +99,7 @@ struct MainWelcomeView: View {
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
                                 .padding()
-                                .background(Color(AppConfig.main_other_pink)) // Button color
+                                .background(Color(AppConfig.Styles.Colors.main_other_pink)) // Button color
                                 .cornerRadius(10)
                                 .frame(minWidth: geometry.size.width - (40))
                         }
@@ -88,13 +107,23 @@ struct MainWelcomeView: View {
                         .padding(.bottom, 5)
                     }
                     .frame(width: geometry.size.width, height: geometry.size.height)
-                    .background(Color(AppConfig.main_background))
+                    .background(Color(AppConfig.Styles.Colors.main_background))
+                    .popover(isPresented: $showingLogoutPopup) {
+                        LogoutSheet(showingLogoutPopup: $showingLogoutPopup, height: geometry.size.height)
+                    }
                 }
-                .background(Color(AppConfig.main_background))
-                .accentColor(Color(AppConfig.main_neon_green))
+                .background(Color(AppConfig.Styles.Colors.main_background))
+                .accentColor(Color(AppConfig.Styles.Colors.main_neon_green))
             } else {
                 ProgressView()
+                    .ignoresSafeArea(.all)
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .background((Color(AppConfig.Styles.Colors.main_background)))
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(2.0)
+                
             }
         }
+        .preferredColorScheme(.light)
     }
 }

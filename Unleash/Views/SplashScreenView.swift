@@ -13,7 +13,8 @@ struct SplashScreenView: View {
     @State private var isActive: Bool = false
     
     var body: some View {
-        if self.isActive {
+        ContentView()
+        /*if self.isActive {
             ContentView() // Your main app view
         } else {
             GeometryReader { geometry in
@@ -36,6 +37,6 @@ struct SplashScreenView: View {
                     }
                 }
             }
-        }
+        }*/
     }
 }

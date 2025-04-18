@@ -25,6 +25,6 @@ struct WorkoutTypeDetailView: View {
                 }
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppConfig.Styles.HorizontalMargin)
     }
 }
