@@ -27,6 +27,8 @@ struct ExerciseBlockView: View {
     var weekNumber: Int
     var dayNumber: Int
     
+    @State var exerciseNote: String = ""
+    
     @State private var activeSheet: SheetType?
     
     private func loadExerciseHistory() {
@@ -180,12 +182,12 @@ struct ExerciseBlockView: View {
                             .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
                             .frame(width: 35, height: 35)
                     }
-                    .padding(.trailing, 10)
+                    .padding(.trailing, 5)
                 }
                 Button {
                     activeSheet = .history
                 } label: {
-                    Image("GreenFolder")
+                    Image("GreenTimer")
                         .resizable()
                         .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
                         .frame(width: 40, height: 35)
@@ -224,35 +226,19 @@ struct ExerciseBlockView: View {
                         })
                         .padding(.trailing, 5)
                     }
-//                VStack {
-//                    if let rpe = exercise.rpe {
-//                        HStack {
-//                            Text("RPE: \(rpe)")
-//                                .bold()
-//                            Spacer()
-//                        }
-//                    }
-//                    
-//                    if let rest = exercise.rest {
-//                        HStack {
-//                            Text("REST: \(rest)")
-//                                .bold()
-//                            Spacer()
-//                        }
-//                    }
-//                }
                 Spacer()
             }
             .padding(.bottom, 10)
+            TextField("Add a note...", text: $exerciseNote)
+                .font(.custom("Nexa-ExtraLight", size: 12))
+                .padding()
+                .frame(height: 35)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color(AppConfig.Styles.Colors.main_neon_green), lineWidth: 3)
+                )
+                .padding(.bottom, 10)
 
-//            if exercise.exerciseDescription! != "None" && exercise.exerciseDescription! != "description of exercise" {
-//                HStack {
-////                    ExpandableTextView(text: exercise.exerciseDescription!, previewCharacterLimit: 80)
-//                    Text(exercise.exerciseDescription!)
-//                        .font(.custom("Nexa-ExtraLight", size: 12))
-//                    Spacer()
-//                }
-//            }
         }
         .padding(CGFloat(padding))
         .background(Color(AppConfig.Styles.Colors.main_light_blue))
