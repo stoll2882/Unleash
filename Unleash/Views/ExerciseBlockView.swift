@@ -23,19 +23,15 @@ struct ExerciseBlockView: View {
     @State private var numberOfSets: Int?
     @State private var mostRecentSets: [WorkoutSet] = []
     @State private var isExerciseComplete: Bool = false  // ✅ Store exercise completion
+    @State private var exerciseNote: String = ""
     
     var weekNumber: Int
     var dayNumber: Int
-    
-    @State var exerciseNote: String = ""
-    
+        
     @State private var activeSheet: SheetType?
     
     private func loadExerciseHistory() {
         DispatchQueue.main.async {
-            if exercise.exerciseName == "Stair Master/Incline Walk/Backwards Walk" {
-                print("here")
-            }
             if exercise.sets == nil || exercise.sets == "" {
                 self.numberOfSets = 1
                 self.mostRecentSets.append(WorkoutSet(setIndex: 0))
@@ -54,10 +50,6 @@ struct ExerciseBlockView: View {
             
             // Sort by `dateCompleted`, placing the most recent first
             let sortedHistory = filteredHistory.sorted { $0.dateCompleted! > $1.dateCompleted! }
-            
-            if exercise.exerciseName == "DB Seated Lateral Raises" {
-                print("here")
-            }
             
             // Return the sets from the most recent instance, or an empty array if none exist
             let mostRecentInstance: ExerciseHistoryInstance? = sortedHistory.first
@@ -92,6 +84,9 @@ struct ExerciseBlockView: View {
                     }
                 }
             }
+            if let note = appDataStore.getExerciseNote(exerciseId: exercise.exerciseID) {
+                exerciseNote = note
+            }
             loading = false
         }
     }
@@ -101,6 +96,7 @@ struct ExerciseBlockView: View {
         DispatchQueue.main.async {
             let newSet = WorkoutSet(setIndex: setIndex, weight: weight, reps: reps, unit: unit, completed: true)
             isExerciseComplete = appDataStore.logExerciseData(firebaseManager: firebaseManager, exerciseId: exercise.exerciseID, weekNumber: weekNumber, dayNumber: dayNumber, newSet: newSet, numSets: numberOfSets ?? 0)
+            appDataStore.saveChangedExerciseNotes(firebaseManager: firebaseManager)
             loadExerciseHistory()
         }
     }
@@ -238,7 +234,12 @@ struct ExerciseBlockView: View {
                         .stroke(Color(AppConfig.Styles.Colors.main_neon_green), lineWidth: 3)
                 )
                 .padding(.bottom, 10)
-
+                .onChange(of: exerciseNote) { oldValuem, newValue in
+                    appDataStore.setExerciseNotes(exerciseId: exercise.exerciseID, note: newValue)
+                }
+                .onSubmit {
+                    appDataStore.saveChangedExerciseNotes(firebaseManager: firebaseManager)
+                }
         }
         .padding(CGFloat(padding))
         .background(Color(AppConfig.Styles.Colors.main_light_blue))

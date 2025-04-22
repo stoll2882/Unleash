@@ -285,6 +285,7 @@ class AppDataStorage: ObservableObject {
         let dispatchGroup = DispatchGroup()
         var exerciseHistoryList: [ExerciseHistoryInstance] = []
         var userData: [String: Any]?
+        var exerciseNotes: [ExerciseNote] = []
 
         // Step 1: Fetch User Document
         dispatchGroup.enter() // ENTER GROUP FOR USER DOCUMENT
@@ -296,6 +297,21 @@ class AppDataStorage: ObservableObject {
             }
             dispatchGroup.leave() // LEAVE GROUP
         }
+
+        dispatchGroup.enter()
+        docRef.collection("exerciseNotes").getDocuments { (noteCollection, error) in
+            if let noteDocCollection = noteCollection, error == nil {
+                for exerciseNote in noteDocCollection.documents {
+                    if let note = exerciseNote.data()["note"] as? String {
+                        exerciseNotes.append(ExerciseNote(exerciseId: exerciseNote.documentID , note: note))
+                    }
+                }
+            }
+            // Some users will have no notes
+        }
+        dispatchGroup.leave()
+        print("Exercise notes: \(exerciseNotes.count)")
+        
 
         // Step 2: Fetch Exercise History
         dispatchGroup.enter() // ENTER GROUP FOR EXERCISE HISTORY
@@ -355,7 +371,8 @@ class AppDataStorage: ObservableObject {
                     id: userUID,
                     name: data["name"] as? String ?? "User",
                     email: data["email"] as? String ?? "None",
-                    exerciseHistory: exerciseHistoryList
+                    exerciseHistory: exerciseHistoryList,
+                    exerciseNotes: exerciseNotes
                 )
                 self.activeUser = loggedInUser
                 print("activeUser is now set with full history")
@@ -371,7 +388,7 @@ class AppDataStorage: ObservableObject {
         let numWeeks = 1...14
         
         // load blank workout program
-        var workoutProgram = WorkoutProgram(trainingWeeks: (1...14).map { week in
+        let workoutProgram = WorkoutProgram(trainingWeeks: (1...14).map { week in
             WorkoutWeek(weekNumber: week, workouts: (1...5).map { Workout(dayNumber: $0) })
         })
         
@@ -418,7 +435,7 @@ class AppDataStorage: ObservableObject {
                     
                     let weekIndex = weekNumber! - 1
                     let dayIndex = dayNumber! - 1
-                    var workout = workoutProgram.trainingWeeks[weekIndex].workouts[dayIndex]
+                    let workout = workoutProgram.trainingWeeks[weekIndex].workouts[dayIndex]
                     
                     // Add exercise to the correct category
                     switch exerciseType {
@@ -439,7 +456,7 @@ class AppDataStorage: ObservableObject {
         // sort workout program order
         for weekIndex in numWeeks {
             for dayIndex in 0..<5 {
-                var workout = workoutProgram.trainingWeeks[weekIndex - 1].workouts[dayIndex]
+                let workout = workoutProgram.trainingWeeks[weekIndex - 1].workouts[dayIndex]
                 workout.warmups.sort { ($0.exerciseGroupNumber ?? Int.max) < ($1.exerciseGroupNumber ?? Int.max) }
                 workout.cooldowns.sort { ($0.exerciseGroupNumber ?? Int.max) < ($1.exerciseGroupNumber ?? Int.max) }
                 workout.exercises.sort { ($0.exerciseGroupNumber ?? Int.max) < ($1.exerciseGroupNumber ?? Int.max) }
@@ -474,4 +491,51 @@ class AppDataStorage: ObservableObject {
                 })
             }
     }
+    
+    func getExerciseNote(exerciseId: String) -> String? {
+        for exerciseNote in self.activeUser.exerciseNotes {
+            if exerciseNote.exerciseId == exerciseId {
+                return exerciseNote.note
+            }
+        }
+        return nil
+    }
+    
+    func setExerciseNotes(exerciseId: String, note: String) {
+        for exerciseNote in self.activeUser.exerciseNotes {
+            if exerciseNote.exerciseId == exerciseId {
+                exerciseNote.setNote(note: note)
+                return
+            }
+        }
+        let newNote = ExerciseNote(exerciseId: exerciseId, note: note)
+        newNote.setModified()
+        self.activeUser.exerciseNotes.append(newNote)
+    }
+    
+    func saveChangedExerciseNotes(firebaseManager: FirebaseManager) {
+        // 1️⃣ Only proceed if something was modified
+        guard activeUser.exerciseNotes.contains(where: \.modified) else { return }
+
+        // 2️⃣ Get current user ID
+        guard let userUID = firebaseManager.auth.currentUser?.uid else { return }
+        var collection = firebaseManager.firestore
+            .collection("users")
+            .document(userUID)
+            .collection("exerciseNotes")
+                
+        var numWritten: Int = 0
+        for note in activeUser.exerciseNotes {
+            if note.modified {
+                collection.document(note.exerciseId).setData(["note": note.note])
+                note.clearModified()
+                numWritten += 1
+            }
+        }
+        
+        print("Num written: \(numWritten)")
+        
+    }
+
+    
 }
