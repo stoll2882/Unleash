@@ -20,6 +20,7 @@ class AppDataStorage: ObservableObject {
     
     @Published var totalProgramInstances: Int
     @Published var timerValues: [String:TimeInterval]
+    @Published var timerValueChanged: [String:Bool]
     
     init() {
         self.activeUser = LocalUser.NullUser
@@ -28,6 +29,7 @@ class AppDataStorage: ObservableObject {
         self.allExercises = [:]
         self.timerValues = [:]
         totalProgramInstances = 0
+        self.timerValueChanged = [:]
     }
     
     func calculateProgramCompletion() -> Double {
@@ -559,21 +561,26 @@ class AppDataStorage: ObservableObject {
     
     func logTimerData(firebaseManager: FirebaseManager, weekNumber: Int, dayNumber: Int) {
         let timerKey = getTimerKey(weekNumber: weekNumber, dayNumber: dayNumber)
-        if let timerValue = self.timerValues[timerKey] {
-            let newSetData: [String: Int] = ["timer": Int(timerValue)]
-            guard let userUID = firebaseManager.auth.currentUser?.uid else { return }
-            let collection = firebaseManager.firestore
-                .collection("users")
-                .document(userUID)
-                .collection("timerHistory")
-            collection.document(timerKey).setData(newSetData)
+        if let timerChanged = self.timerValueChanged[timerKey] {
+            if timerChanged {
+                if let timerValue = self.timerValues[timerKey] {
+                    let newSetData: [String: Int] = ["timer": Int(timerValue)]
+                    guard let userUID = firebaseManager.auth.currentUser?.uid else { return }
+                    let collection = firebaseManager.firestore
+                        .collection("users")
+                        .document(userUID)
+                        .collection("timerHistory")
+                    collection.document(timerKey).setData(newSetData)
+                }
+                self.timerValueChanged[timerKey] = false
+            }
         }
-        print("Loggin timer data \(timerKey)")
     }
         
     func setTimerValue(timerValue: TimeInterval?, weekNumber: Int, dayNumber: Int) {
         let timerKey = getTimerKey(weekNumber: weekNumber, dayNumber: dayNumber)
         self.timerValues[timerKey] = timerValue
+        self.timerValueChanged[timerKey] = true
     }
     
     func getTimerValue(weekNumber: Int, dayNumber: Int) -> TimeInterval? {
