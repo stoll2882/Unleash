@@ -63,7 +63,7 @@ struct WorkoutDayDetailView: View {
         startTime = Date()
         isTimerRunning = true
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-            elapsedTime = Date().timeIntervalSince(startTime)
+            appDataStore.setTimerValue(timerValue: Date().timeIntervalSince(startTime), weekNumber: weekNumber, dayNumber: dayNumber)
         }
     }
 
@@ -75,7 +75,7 @@ struct WorkoutDayDetailView: View {
 
     func resetWorkoutTimer() {
         stopWorkoutTimer()
-        elapsedTime = 0
+        appDataStore.resetTimerValue(weekNumber: weekNumber, dayNumber: dayNumber)
         startWorkoutTimer()
     }
     
@@ -132,33 +132,12 @@ struct WorkoutDayDetailView: View {
                                 .foregroundStyle(Color(AppConfig.Styles.Colors.main_other_pink))
                                 .frame(width: 120, height: 140)
                                 .padding(10)
-//                            Text("Workout Timer")
-//                                .font(.custom("Nexa-Bold", size: 18))
 
-                            Text(formatTime(elapsedTime))
-                                .font(.system(size: 32, weight: .bold, design: .monospaced))
+                            if let timerValue = appDataStore.getTimerValue(weekNumber: weekNumber, dayNumber: dayNumber) {
+                                Text(formatTime(timerValue))
+                                    .font(.system(size: 32, weight: .bold, design: .monospaced))
+                            }
 
-//                            HStack {
-//                                Button(action: {
-//                                    isTimerRunning ? stopWorkoutTimer() : startWorkoutTimer()
-//                                }) {
-//                                    Text(isTimerRunning ? "Pause" : "Resume")
-//                                        .padding()
-//                                        .background(Color.green)
-//                                        .foregroundColor(.white)
-//                                        .cornerRadius(10)
-//                                }
-//
-//                                Button(action: {
-//                                    resetWorkoutTimer()
-//                                }) {
-//                                    Text("Reset")
-//                                        .padding()
-//                                        .background(Color.red)
-//                                        .foregroundColor(.white)
-//                                        .cornerRadius(10)
-//                                }
-//                            }
                         } else {
                             HStack {
                                 Image("GreenTimer2")
@@ -166,15 +145,6 @@ struct WorkoutDayDetailView: View {
                                     .foregroundStyle(Color(AppConfig.Styles.Colors.main_other_pink))
                                     .frame(width: 21, height: 25)
                                     .padding(10)
-//                                Image("GreenTimer")
-//                                    .resizable()
-//                                    .foregroundStyle(Color(AppConfig.Styles.Colors.main_other_pink))
-//                                    .frame(width: 25, height: 21)
-//                                    .padding(.trailing, 10)
-//                                Text("\(formatTime(elapsedTime))")
-//                                    .font(.custom("Nexa-Bold", size: 16))
-//                                    .foregroundColor(AppConfig.Styles.Colors.main_neon_green)
-//                                Spacer()
                             }
                             .padding(.horizontal)
                             .frame(height: collapsedHeight)
@@ -205,6 +175,10 @@ struct WorkoutDayDetailView: View {
                 }
                 .padding()
             }
+            .onDisappear {
+                stopWorkoutTimer()
+            }
+
         }
         .onAppear(perform: {
             loadExercises(firebaseManager: firebaseManager)

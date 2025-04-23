@@ -19,12 +19,14 @@ class AppDataStorage: ObservableObject {
     @Published var allExercises: [String:Exercise]
     
     @Published var totalProgramInstances: Int
+    @Published var timerValues: [String:TimeInterval]
     
     init() {
         self.activeUser = LocalUser.NullUser
         self.loggedIn = false
         self.activeWorkoutProgram = nil
         self.allExercises = [:]
+        self.timerValues = [:]
         totalProgramInstances = 0
     }
     
@@ -75,6 +77,8 @@ class AppDataStorage: ObservableObject {
         }
     }
     
+
+    
     func logExerciseData(firebaseManager: FirebaseManager, exerciseId: String, weekNumber: Int, dayNumber: Int, newSet: WorkoutSet, numSets: Int) -> Bool {
         let userRef = firebaseManager.firestore.collection("users").document(self.activeUser.id)
         var exerciseCompleted: Bool = false
@@ -86,6 +90,7 @@ class AppDataStorage: ObservableObject {
         let historyRef = userRef
             .collection("exerciseHistory")
             .document(instanceId)
+
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
@@ -119,7 +124,7 @@ class AppDataStorage: ObservableObject {
                 activeUser.exerciseHistory.append(newHistoryInstance)
             }
         }
-        
+                
         // Modify database data
         historyRef.getDocument { document, error in
             if let document = document, document.exists {
@@ -197,6 +202,7 @@ class AppDataStorage: ObservableObject {
                     }
                 }
             }
+            self.logTimerData(firebaseManager: firebaseManager, weekNumber: weekNumber, dayNumber: dayNumber)
         }
         return exerciseCompleted
     }
@@ -312,6 +318,17 @@ class AppDataStorage: ObservableObject {
         dispatchGroup.leave()
         print("Exercise notes: \(exerciseNotes.count)")
         
+        dispatchGroup.enter()
+        docRef.collection("timerHistory").getDocuments { (timerDocCollection, error) in
+            if let timerCollection = timerDocCollection, error == nil {
+                for timerDoc in timerCollection.documents {
+                    self.timerValues[timerDoc.documentID] = TimeInterval(Int(timerDoc["timer"] as! Int))
+                }
+            }
+            // Some users will have no notes
+        }
+        dispatchGroup.leave()
+        
 
         // Step 2: Fetch Exercise History
         dispatchGroup.enter() // ENTER GROUP FOR EXERCISE HISTORY
@@ -406,7 +423,6 @@ class AppDataStorage: ObservableObject {
                 snapshot.documents.forEach({ (documentSnapshot) in
                     let documentData = documentSnapshot.data()
                     
-                    let id = documentSnapshot.documentID
                     let weekNumber = documentData["weekNumber"] as? Int
                     let dayNumber = documentData["dayNumber"] as? Int
                     let exerciseType = documentData["exerciseType"] as? String
@@ -519,7 +535,7 @@ class AppDataStorage: ObservableObject {
 
         // 2️⃣ Get current user ID
         guard let userUID = firebaseManager.auth.currentUser?.uid else { return }
-        var collection = firebaseManager.firestore
+        let collection = firebaseManager.firestore
             .collection("users")
             .document(userUID)
             .collection("exerciseNotes")
@@ -536,6 +552,38 @@ class AppDataStorage: ObservableObject {
         print("Num written: \(numWritten)")
         
     }
-
     
+    func getTimerKey(weekNumber: Int, dayNumber: Int) -> String {
+        return "timer_week\(weekNumber)_day\(dayNumber)"
+    }
+    
+    func logTimerData(firebaseManager: FirebaseManager, weekNumber: Int, dayNumber: Int) {
+        let timerKey = getTimerKey(weekNumber: weekNumber, dayNumber: dayNumber)
+        if let timerValue = self.timerValues[timerKey] {
+            let newSetData: [String: Int] = ["timer": Int(timerValue)]
+            guard let userUID = firebaseManager.auth.currentUser?.uid else { return }
+            let collection = firebaseManager.firestore
+                .collection("users")
+                .document(userUID)
+                .collection("timerHistory")
+            collection.document(timerKey).setData(newSetData)
+        }
+        print("Loggin timer data \(timerKey)")
+    }
+        
+    func setTimerValue(timerValue: TimeInterval?, weekNumber: Int, dayNumber: Int) {
+        let timerKey = getTimerKey(weekNumber: weekNumber, dayNumber: dayNumber)
+        self.timerValues[timerKey] = timerValue
+    }
+    
+    func getTimerValue(weekNumber: Int, dayNumber: Int) -> TimeInterval? {
+        let timerKey = getTimerKey(weekNumber: weekNumber, dayNumber: dayNumber)
+        return self.timerValues[timerKey]
+    }
+    
+    
+    func resetTimerValue(weekNumber: Int, dayNumber: Int) {
+        let timerKey = getTimerKey(weekNumber: weekNumber, dayNumber: dayNumber)
+        self.timerValues[timerKey] = 0
+    }
 }

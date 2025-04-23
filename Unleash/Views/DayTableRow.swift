@@ -40,6 +40,12 @@ struct DayTableRow: View {
                 }
                 .frame(alignment: .leading)
                 .layoutPriority(1)
+                if checkForCompletion() {
+                    let valueToShow = appDataStore.getTimerValue(weekNumber: weekNumber, dayNumber: workout.dayNumber)
+                    Text(String(format: "%.0fs", valueToShow!))
+                        .textMain()
+                        .layoutPriority(2)
+                }
                 VStack {
                     Spacer()
                     if checkForCompletion() {
@@ -63,5 +69,9 @@ struct DayTableRow: View {
         .background(Color(AppConfig.Styles.Colors.main_light_blue))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .padding(.horizontal, 10)
+        .onDisappear {
+            appDataStore.logTimerData(firebaseManager: firebaseManager, weekNumber: weekNumber, dayNumber: workout.dayNumber)
+        }
+        
     }
 }
