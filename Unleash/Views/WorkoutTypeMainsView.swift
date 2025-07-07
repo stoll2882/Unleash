@@ -59,7 +59,7 @@ struct WorkoutTypeMainsView: View {
                                         }
 //                                        .padding(.leading, -10)
                                         ForEach(mainExerciseBlocks[key] ?? [], id: \.exerciseID) { exercise in
-                                            ExerciseBlockView(exercise: exercise, padding: 5, weekNumber: weekNumber, dayNumber: dayNumber)
+                                            ExerciseBlockView(exercise: exercise, padding: 5, weekNumber: weekNumber, dayNumber: dayNumber, isWarmupOrCooldown: false)
                                                 .zIndex(-10.0)
                                         }
                                     }
@@ -69,7 +69,7 @@ struct WorkoutTypeMainsView: View {
                                 .padding(.bottom, 20)
                             } else {
                                 ForEach(mainExerciseBlocks[key] ?? [], id: \.exerciseID) { exercise in
-                                    ExerciseBlockView(exercise: exercise, padding: 20, weekNumber: weekNumber, dayNumber: dayNumber)
+                                    ExerciseBlockView(exercise: exercise, padding: 20, weekNumber: weekNumber, dayNumber: dayNumber, isWarmupOrCooldown: false)
                                 }
                             }
                         }
@@ -78,6 +78,7 @@ struct WorkoutTypeMainsView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                         .padding(.bottom, 10)
                     }
+                    .padding(.bottom, 100)
                 }
                 .padding(.leading, AppConfig.Styles.HorizontalMargin)
             }

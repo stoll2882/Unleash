@@ -69,7 +69,7 @@ class AppConfig {
             
             class Title {
                 static var Size: CGFloat = 20
-                static var Color: Color = Colors.main_neon_green
+                static var Color: Color = Colors.main_dark_green
                 static var Font: String = MainFont
             }
             class SubTitle {

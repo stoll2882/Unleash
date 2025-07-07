@@ -99,7 +99,7 @@ struct ExerciseHistoryView: View {
         VStack {
             VStack {
                 HStack {
-                    Image("GreenFolder")
+                    Image("GreenTimer2")
                         .resizable()
                         .frame(width: 40, height: 35)
                     Text("Set History")

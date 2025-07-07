@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FirebaseFirestore
+import AVKit
 
 struct ExerciseBlockView: View {
     @State var exercise: ProgramExercise
@@ -29,6 +30,8 @@ struct ExerciseBlockView: View {
     var dayNumber: Int
         
     @State private var activeSheet: SheetType?
+    
+    @State var isWarmupOrCooldown: Bool
     
     private func loadExerciseHistory() {
         DispatchQueue.main.async {
@@ -126,41 +129,65 @@ struct ExerciseBlockView: View {
             }
         }
         .buttonStyle(SetsButtonStyle(selectedButtons: $selectedButtons, isShowingEntryView: $isShowingEntryView, selectedSetIndex: $selectedSetIndex, index: index, isExerciseComplete: $isExerciseComplete, activeSheet: $activeSheet, isSetComplete: mostRecentSets[index].completed!))
-        .disabled(isExerciseComplete)
+        .disabled(false)
     }
 
     var body: some View {
         VStack {
             HStack {
                 VStack(alignment: .leading) {
-                    Text(exercise.exerciseName!)
-                        .font(.custom("Nexa-Heavy", size: 25))
-                        .bold()
-                        .padding(.bottom, 5)
-
                     if !loading {
-                        HStack {
-                            ScrollView(.horizontal) {
-                                HStack {
-                                    ForEach(0..<numberOfSets!, id: \.self) { index in
-                                        let set = mostRecentSets[index]
-                                        setButton(index: index, set: set)
+                        if isWarmupOrCooldown {
+                            HStack {
+                                Text(exercise.exerciseName!)
+                                    .font(.custom("Nexa-Heavy", size: 20))
+                                    .bold()
+                                    .padding(.bottom, 5)
+                                Spacer()
+                                Button {
+                                    if !isExerciseComplete {
+                                        let dummySet = WorkoutSet(setIndex: 0, weight: 0, reps: 0, unit: "lbs", completed: true)
+                                        isExerciseComplete = appDataStore.logExerciseData(
+                                            firebaseManager: firebaseManager,
+                                            exerciseId: exercise.exerciseID,
+                                            weekNumber: weekNumber,
+                                            dayNumber: dayNumber,
+                                            newSet: dummySet,
+                                            numSets: 1
+                                        )
                                     }
+                                } label: {
+                                    Image(isExerciseComplete ? "Complete" : "Incomplete")
+                                        .resizable()
+                                        .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
+                                        .frame(width: 40, height: 40)
+                                        .padding(.leading, 10)
+                                    
                                 }
                             }
-                            Spacer()
-                            if isExerciseComplete {
-                                Image("Complete")
-                                    .resizable()
-                                    .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
-                                    .frame(width: 40, height: 40)
-                                    .padding(.leading, 10)
-                            } else {
-                                Image("Incomplete")
-                                    .resizable()
-                                    .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
-                                    .frame(width: 40, height: 40)
-                                    .padding(.leading, 10)                            }
+                        } else {
+                            VStack (alignment: .leading) {
+                                Text(exercise.exerciseName!)
+                                    .font(.custom("Nexa-Heavy", size: 20))
+                                    .bold()
+                                    .padding(.bottom, 5)
+                                HStack {
+                                    ScrollView(.horizontal) {
+                                        HStack {
+                                            ForEach(0..<numberOfSets!, id: \.self) { index in
+                                                let set = mostRecentSets[index]
+                                                setButton(index: index, set: set)
+                                            }
+                                        }
+                                    }
+                                    Spacer()
+                                    Image(isExerciseComplete ? "Complete" : "Incomplete")
+                                        .resizable()
+                                        .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
+                                        .frame(width: 40, height: 40)
+                                        .padding(.leading, 10)
+                                }
+                            }
                         }
                     }
                 }
@@ -171,7 +198,12 @@ struct ExerciseBlockView: View {
             HStack {
                 if exercise.exerciseVideoURL != "None" {
                     Button {
-                        isPresentingVideo = true
+                        guard appDataStore.sharedVideoPlayer == nil else { return } // Optional: prevent double play
+                        if let urlString = exercise.exerciseVideoURL,
+                           let url = URL(string: urlString) {
+                            appDataStore.sharedVideoPlayer = AVPlayer(url: url)
+                            isPresentingVideo = true
+                        }
                     } label: {
                         Image("GreenPlayButton")
                             .resizable()
@@ -179,6 +211,16 @@ struct ExerciseBlockView: View {
                             .frame(width: 35, height: 35)
                     }
                     .padding(.trailing, 5)
+
+//                    Button {
+//                        isPresentingVideo = true
+//                    } label: {
+//                        Image("GreenPlayButton")
+//                            .resizable()
+//                            .foregroundStyle(Color(AppConfig.Styles.Colors.main_bright_pink))
+//                            .frame(width: 35, height: 35)
+//                    }
+//                    .padding(.trailing, 5)
                 }
                 Button {
                     activeSheet = .history
@@ -202,7 +244,7 @@ struct ExerciseBlockView: View {
                 }
                 if let rpe = exercise.rpe {
                     Text("RPE: \(rpe)")
-                        .font(.custom("Nexa-ExtraLight", size: 12))
+                        .font(.custom("Nexa-Heavy", size: 12))
                         .frame(height: 35)
                         .padding(.horizontal, 5)
                         .overlay(content: {
@@ -213,7 +255,7 @@ struct ExerciseBlockView: View {
                 }
                 if let rest = exercise.rest {
                     Text("REST: \(rest)")
-                        .font(.custom("Nexa-ExtraLight", size: 12))
+                        .font(.custom("Nexa-Heavy", size: 12))
                         .frame(height: 35)
                         .padding(.horizontal, 5)
                         .overlay(content: {
@@ -245,9 +287,18 @@ struct ExerciseBlockView: View {
         .background(Color(AppConfig.Styles.Colors.main_light_blue))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .fullScreenCover(isPresented: $isPresentingVideo) {
-            if exercise.exerciseVideoURL != nil {
-                VideoPlayerView(videoURL: URL(string: exercise.exerciseVideoURL!)!)
+//            if exercise.exerciseVideoURL != nil {
+//                VideoPlayerView(videoURL: URL(string: exercise.exerciseVideoURL!)!)
+//            }
+            if let player = appDataStore.sharedVideoPlayer {
+                VideoPlayerView(player: player)
+                    .onDisappear {
+                        player.pause()
+                        player.replaceCurrentItem(with: nil)
+                        appDataStore.sharedVideoPlayer = nil
+                    }
             }
+
         }
         .onAppear {
             loadExerciseHistory()
@@ -285,6 +336,21 @@ struct ExerciseBlockView: View {
 
 struct SetIndexWrapper: Identifiable {
     let id: Int
+}
+
+struct CheckboxToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button(action: {
+            configuration.isOn.toggle()
+        }) {
+            HStack {
+                Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
+                    .foregroundColor(configuration.isOn ? .green : .gray)
+                configuration.label
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
 }
 
 

@@ -11,6 +11,7 @@ import FirebaseFirestore
 import FirebaseStorage
 import FirebaseCore
 import Collections
+import AVKit
 
 class AppDataStorage: ObservableObject {
     @Published var activeUser: LocalUser
@@ -21,6 +22,8 @@ class AppDataStorage: ObservableObject {
     @Published var totalProgramInstances: Int
     @Published var timerValues: [String:TimeInterval]
     @Published var timerValueChanged: [String:Bool]
+    
+    @Published var sharedVideoPlayer: AVPlayer? = nil
     
     init() {
         self.activeUser = LocalUser.NullUser
@@ -109,13 +112,22 @@ class AppDataStorage: ObservableObject {
         
         // Modify local data
         if let index = activeUser.exerciseHistory.firstIndex(where: { $0.id == instanceId }) {
-            // Safely retrieve and update the notes array
-            activeUser.exerciseHistory[index].sets?.append(newSet)
-            if (activeUser.exerciseHistory[index].sets?.count == numSets) {
-                exerciseCompleted = true
-                activeUser.exerciseHistory[index].completed = true
+            if activeUser.exerciseHistory[index].sets == nil {
+                activeUser.exerciseHistory[index].sets = []
             }
-            print("Updated set")
+
+            // Replace existing set if same setIndex, otherwise append
+            if let existingSetIndex = activeUser.exerciseHistory[index].sets!.firstIndex(where: { $0.setIndex == newSet.setIndex }) {
+                activeUser.exerciseHistory[index].sets![existingSetIndex] = newSet
+            } else {
+                activeUser.exerciseHistory[index].sets!.append(newSet)
+            }
+
+            // Check if all sets are completed
+            if activeUser.exerciseHistory[index].sets!.filter({ $0.completed == true }).count == numSets {
+                activeUser.exerciseHistory[index].completed = true
+                exerciseCompleted = true
+            }
         } else {
             if numSets == 1 {
                 exerciseCompleted = true
@@ -131,81 +143,53 @@ class AppDataStorage: ObservableObject {
         historyRef.getDocument { document, error in
             if let document = document, document.exists {
                 var existingSets = document.data()?["sets"] as? [[String: Any]] ?? []
-                
-                // Prevent duplicate entries
-                if !existingSets.contains(where: {
-                    $0["setIndex"] as? Int == newSet.setIndex
-                }) {
-                    existingSets.append(newSetData)
-                    
-                    if exerciseCompleted {
-                        historyRef.setData([
-                            "sets": existingSets,
-                            "completed": exerciseCompleted,
-                            "dateCompleted": dateCompleted,
-                            "exerciseId": exerciseId,
-                            "weekNumber": weekNumber,
-                            "dayNumber": dayNumber
-                        ], merge: true) { error in
-                            if let error = error {
-                                print("Error updating history: \(error.localizedDescription)")
-                            } else {
-                                print("New set added to history for set \(newSet.setIndex)")
-                            }
-                        }
+
+                // Remove existing set with same setIndex (if any)
+                existingSets.removeAll(where: { $0["setIndex"] as? Int == newSet.setIndex })
+
+                // Add the new/updated set
+                existingSets.append(newSetData)
+
+                // Prepare updated data
+                let updatedData: [String: Any] = [
+                    "sets": existingSets,
+                    "completed": exerciseCompleted,
+                    "dateCompleted": dateCompleted,
+                    "exerciseId": exerciseId,
+                    "weekNumber": weekNumber,
+                    "dayNumber": dayNumber
+                ]
+
+                // Push to Firestore
+                historyRef.setData(updatedData, merge: true) { error in
+                    if let error = error {
+                        print("Error updating history: \(error.localizedDescription)")
                     } else {
-                        historyRef.setData([
-                            "sets": existingSets,
-                            "completed": exerciseCompleted,
-                            "dateCompleted": dateCompleted,
-                            "exerciseId": exerciseId,
-                            "weekNumber": weekNumber,
-                            "dayNumber": dayNumber
-                        ], merge: true) { error in
-                            if let error = error {
-                                print("Error updating history: \(error.localizedDescription)")
-                            } else {
-                                print("New set added to history for set \(newSet.setIndex)")
-                            }
-                        }
+                        print("Set \(newSet.setIndex) updated in existing exercise history.")
                     }
                 }
             } else {
                 // First time logging this exercise
-                if exerciseCompleted {
-                    historyRef.setData([
-                        "sets": [newSetData],
-                        "completed": exerciseCompleted,
-                        "dateCompleted": dateCompleted,
-                        "exerciseId": exerciseId,
-                        "weekNumber": weekNumber,
-                        "dayNumber": dayNumber
-                    ]) { error in
-                        if let error = error {
-                            print("Error creating history: \(error.localizedDescription)")
-                        } else {
-                            print("Exercise history created for first time.")
-                        }
-                    }
-                } else {
-                    historyRef.setData([
-                        "sets": [newSetData],
-                        "completed": exerciseCompleted,
-                        "dateCompleted": dateCompleted,
-                        "exerciseId": exerciseId,
-                        "weekNumber": weekNumber,
-                        "dayNumber": dayNumber
-                    ]) { error in
-                        if let error = error {
-                            print("Error creating history: \(error.localizedDescription)")
-                        } else {
-                            print("Exercise history created for first time.")
-                        }
+                let newData: [String: Any] = [
+                    "sets": [newSetData],
+                    "completed": exerciseCompleted,
+                    "dateCompleted": dateCompleted,
+                    "exerciseId": exerciseId,
+                    "weekNumber": weekNumber,
+                    "dayNumber": dayNumber
+                ]
+
+                historyRef.setData(newData) { error in
+                    if let error = error {
+                        print("Error creating history: \(error.localizedDescription)")
+                    } else {
+                        print("Exercise history created for first time with set \(newSet.setIndex).")
                     }
                 }
             }
             self.logTimerData(firebaseManager: firebaseManager, weekNumber: weekNumber, dayNumber: dayNumber)
         }
+
         return exerciseCompleted
     }
     

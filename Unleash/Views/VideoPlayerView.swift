@@ -9,32 +9,25 @@ import SwiftUI
 import AVKit
 
 struct VideoPlayerView: View {
-    let videoURL: URL
+    let player: AVPlayer
     @Environment(\.presentationMode) var presentationMode
-    private let player: AVPlayer
-    
-    init(videoURL: URL) {
-        self.videoURL = videoURL
-        self.player = AVPlayer(url: videoURL)
-
-        // Force audio to play even in silent mode
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
-        try? AVAudioSession.sharedInstance().setActive(true)
-    }
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
             VideoPlayer(player: player)
                 .onAppear {
+                    player.seek(to: .zero)
                     player.play()
                 }
                 .onDisappear {
                     player.pause()
+                    player.replaceCurrentItem(with: nil) // Full cleanup
                 }
                 .edgesIgnoringSafeArea(.all)
-            
+
             Button(action: {
                 player.pause()
+                player.replaceCurrentItem(with: nil)
                 presentationMode.wrappedValue.dismiss()
             }) {
                 Image(systemName: "xmark.circle.fill")

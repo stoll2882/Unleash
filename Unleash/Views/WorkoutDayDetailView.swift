@@ -12,6 +12,7 @@ struct WorkoutDayDetailView: View {
     @State var workoutData: Workout
     var weekNumber: Int
     var dayNumber: Int
+    var completed: Bool
     @EnvironmentObject var appDataStore: AppDataStorage
     @EnvironmentObject var firebaseManager: FirebaseManager
     
@@ -60,23 +61,29 @@ struct WorkoutDayDetailView: View {
     }
     
     func startWorkoutTimer() {
-        startTime = Date()
-        isTimerRunning = true
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-            appDataStore.setTimerValue(timerValue: Date().timeIntervalSince(startTime), weekNumber: weekNumber, dayNumber: dayNumber)
+        if !completed {
+            startTime = Date()
+            isTimerRunning = true
+            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                appDataStore.setTimerValue(timerValue: Date().timeIntervalSince(startTime), weekNumber: weekNumber, dayNumber: dayNumber)
+            }
         }
     }
 
     func stopWorkoutTimer() {
-        isTimerRunning = false
-        timer?.invalidate()
-        timer = nil
+//        if !completed {
+            isTimerRunning = false
+            timer?.invalidate()
+            timer = nil
+//        }
     }
 
     func resetWorkoutTimer() {
-        stopWorkoutTimer()
-        appDataStore.resetTimerValue(weekNumber: weekNumber, dayNumber: dayNumber)
-        startWorkoutTimer()
+//        if !completed {
+            stopWorkoutTimer()
+            appDataStore.resetTimerValue(weekNumber: weekNumber, dayNumber: dayNumber)
+            startWorkoutTimer()
+//        }
     }
     
     func formatTime(_ time: TimeInterval) -> String {
@@ -98,7 +105,7 @@ struct WorkoutDayDetailView: View {
                     case 0: WorkoutTypeDetailView(exerciseType: "warmup", weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[0])
                     case 1: WorkoutTypeMainsView(weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[1], mainExerciseBlocks: mainExerciseBlocks)
                     case 2: WorkoutTypeDetailView(exerciseType: "cooldown", weekNumber: weekNumber, dayNumber: dayNumber, exercises: exercises[2])
-                        
+                         
                     default:
                         DaySelectionTableView(weekNumber: 1)
                     }
@@ -125,53 +132,55 @@ struct WorkoutDayDetailView: View {
                         .frame(width: 40, height: 5)
                         .padding(.top, 10)
                     
-                    VStack(spacing: 10) {
-                        if showFullTimer {
-                            Image("GreenTimer2")
-                                .resizable()
-                                .foregroundStyle(Color(AppConfig.Styles.Colors.main_other_pink))
-                                .frame(width: 120, height: 140)
-                                .padding(10)
-
-                            if let timerValue = appDataStore.getTimerValue(weekNumber: weekNumber, dayNumber: dayNumber) {
-                                Text(formatTime(timerValue))
-                                    .font(.system(size: 32, weight: .bold, design: .monospaced))
-                            }
-
-                        } else {
-                            HStack {
+                    if !completed {
+                        VStack(spacing: 10) {
+                            if showFullTimer {
                                 Image("GreenTimer2")
                                     .resizable()
                                     .foregroundStyle(Color(AppConfig.Styles.Colors.main_other_pink))
-                                    .frame(width: 21, height: 25)
+                                    .frame(width: 120, height: 140)
                                     .padding(10)
+                                
+                                if let timerValue = appDataStore.getTimerValue(weekNumber: weekNumber, dayNumber: dayNumber) {
+                                    Text(formatTime(timerValue))
+                                        .font(.system(size: 32, weight: .bold, design: .monospaced))
+                                }
+                                
+                            } else {
+                                HStack {
+                                    Image("GreenTimer2")
+                                        .resizable()
+                                        .foregroundStyle(Color(AppConfig.Styles.Colors.main_other_pink))
+                                        .frame(width: 21, height: 25)
+                                        .padding(10)
+                                }
+                                .padding(.horizontal)
+                                .frame(height: collapsedHeight)
                             }
-                            .padding(.horizontal)
-                            .frame(height: collapsedHeight)
                         }
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .frame(height: showFullTimer ? expandedHeight : collapsedHeight)
-                    .background(AppConfig.Styles.Colors.main_other_pink)
-                    .cornerRadius(20)
-                    .shadow(radius: 10)
-                    .gesture(
-                        DragGesture()
-                            .updating($dragOffset) { value, state, _ in
-                                state = value.translation.height
-                            }
-                            .onEnded { value in
-                                withAnimation {
-                                    if value.translation.height < -50 {
-                                        showFullTimer = true
-                                    } else if value.translation.height > 50 {
-                                        showFullTimer = false
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: showFullTimer ? expandedHeight : collapsedHeight)
+                        .background(AppConfig.Styles.Colors.main_other_pink)
+                        .cornerRadius(20)
+                        .shadow(radius: 10)
+                        .gesture(
+                            DragGesture()
+                                .updating($dragOffset) { value, state, _ in
+                                    state = value.translation.height
+                                }
+                                .onEnded { value in
+                                    withAnimation {
+                                        if value.translation.height < -50 {
+                                            showFullTimer = true
+                                        } else if value.translation.height > 50 {
+                                            showFullTimer = false
+                                        }
                                     }
                                 }
-                            }
-                    )
-                    .offset(y: dragOffset)
+                        )
+                        .offset(y: dragOffset)
+                    }
                 }
                 .padding()
             }

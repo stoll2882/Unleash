@@ -20,9 +20,9 @@ struct DayTableRow: View {
         
         return exerciseIds.isSubset(of: historyIds)
     }
-    
+     
     var body: some View {
-        NavigationLink(destination: WorkoutDayDetailView(workoutData: workout, weekNumber: weekNumber, dayNumber: workout.dayNumber)) {
+        NavigationLink(destination: WorkoutDayDetailView(workoutData: workout, weekNumber: weekNumber, dayNumber: workout.dayNumber, completed: checkForCompletion())) {
             HStack {
                 VStack {
                     HStack {
