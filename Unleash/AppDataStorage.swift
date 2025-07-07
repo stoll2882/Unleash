@@ -62,7 +62,8 @@ class AppDataStorage: ObservableObject {
                 "setIndex": set.setIndex,
                 "weight": set.weight,
                 "reps": set.reps,
-                "unit": set.unit
+                "unit": set.unit,
+                "time": set.time
             ]
         }
         let data: [String: Any] = [
@@ -106,6 +107,7 @@ class AppDataStorage: ObservableObject {
             "weight": newSet.weight,
             "reps": newSet.reps,
             "unit": newSet.unit,
+            "time": newSet.time,
             "dateCompleted": dateCompleted,
             "completed": true
         ]
@@ -341,11 +343,12 @@ class AppDataStorage: ObservableObject {
                 if let setsArray = documentData["sets"] as? [[String: Any]] {
                     for set in setsArray {
                         let reps = set["reps"] as? Int
+                        let time = set["time"] as? Int
                         let setIndex = set["setIndex"] as? Int ?? 0
                         let unit = set["unit"] as? String
                         let weight = set["weight"] as? Double
                         
-                        let newWorkoutSet = WorkoutSet(setIndex: setIndex, weight: weight, reps: reps, unit: unit, completed: true)
+                        let newWorkoutSet = WorkoutSet(setIndex: setIndex, weight: weight, reps: reps, unit: unit, time: time, completed: true)
                         exerciseSets.append(newWorkoutSet)
                     }
                 }

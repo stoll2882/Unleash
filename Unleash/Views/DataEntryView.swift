@@ -7,6 +7,11 @@
 ///
 import SwiftUI
 
+enum EntryMode {
+    case reps
+    case time
+}
+
 struct DataEntryView: View {
     @EnvironmentObject var appDataStore: AppDataStorage
     @EnvironmentObject var firebaseManager: FirebaseManager
@@ -15,9 +20,11 @@ struct DataEntryView: View {
     @State var weight: String
     @State var selectedReps: Int
     @State var selectedUnit: String = "lbs"
+    @State var entryMode: EntryMode = .reps
+    @State var enteredTime: String = ""
     
     let setIndex: Int
-    let onSave: (Int, Double, Int, String) -> Void
+    let onSave: (Int, Double, Int?, String, Int?) -> Void
     
     let availableReps = Array(1...30)  // Reps from 4 to 13
 
@@ -25,7 +32,15 @@ struct DataEntryView: View {
         VStack {
             Spacer()
             VStack(spacing: 20) {
-                selectRepsView()
+                toggleInputModeView()
+                ZStack {
+                    if entryMode == .reps {
+                        selectRepsView()
+                    } else {
+                        timeEntryView()
+                    }
+                }
+                .frame(height: 100)
                 weightEntryView()
                 bodyWeightButton()
                 trackButton()
@@ -39,6 +54,55 @@ struct DataEntryView: View {
         .frame(maxWidth: .infinity)
         .padding(30)
     }
+    
+    /// **Mode Picker**
+   private func entryModePicker() -> some View {
+       Picker("Entry Mode", selection: $entryMode) {
+           Text("Reps").tag(EntryMode.reps)
+           Text("Time (sec)").tag(EntryMode.time)
+       }
+       .pickerStyle(SegmentedPickerStyle())
+       .padding(.bottom, 10)
+   }
+    
+    /// Reps vs Time Toggle Picker
+    private func toggleInputModeView() -> some View {
+        HStack(spacing: 0) {
+            modeButton(title: "Reps", isSelected: entryMode == .reps) {
+                entryMode = .reps
+            }
+            modeButton(title: "Time", isSelected: entryMode == .time) {
+                entryMode = .time
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 15))
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(Color(AppConfig.Styles.Colors.main_dark_blue), lineWidth: 2)
+        )
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(Color.white)
+        )
+        .padding(.top, 5)
+        .padding(.horizontal, 5)
+    }
+
+
+    private func modeButton(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.custom("Nexa-Heavy", size: 16))
+                .foregroundColor(isSelected ? .white : Color(AppConfig.Styles.Colors.main_dark_blue))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(isSelected ? Color(AppConfig.Styles.Colors.main_dark_blue) : Color.clear)
+                )
+        }
+    }
+
 
     /// **Reps Selection View**
     private func selectRepsView() -> some View {
@@ -85,6 +149,30 @@ struct DataEntryView: View {
             }
         }
         .padding(.vertical, 20)
+    }
+    
+    /// **Time Entry View**
+    private func timeEntryView() -> some View {
+        VStack {
+            Text("enter time in seconds")
+                .font(.custom("Nexa-Heavy", size: 16))
+                .foregroundColor(.black)
+
+            TextField("Time", text: $enteredTime)
+                .keyboardType(.numberPad)
+                .font(.custom("Nexa-Heavy", size: 20))
+                .frame(width: 100, height: 25)
+                .multilineTextAlignment(.center)
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color(AppConfig.Styles.Colors.main_neon_green), lineWidth: 3)
+                )
+                .onChange(of: enteredTime) { newValue in
+                    enteredTime = newValue.filter { "0123456789".contains($0) }
+                }
+        }
+        .padding(.bottom, 10)
     }
 
     /// **Weight Entry and Unit Selector**
@@ -160,7 +248,9 @@ struct DataEntryView: View {
     private func trackButton() -> some View {
         Button {
             guard let weightValue = Double(weight) else { return }
-            onSave(setIndex, weightValue, selectedReps, selectedUnit)
+            let timeValue = entryMode == .time ? Int(enteredTime) : nil
+            let repsValue = entryMode == .reps ? selectedReps : nil
+            onSave(setIndex, weightValue, repsValue, selectedUnit, timeValue)
             presentationMode.wrappedValue.dismiss()
         } label: {
             Text("TRACK")
@@ -176,77 +266,3 @@ struct DataEntryView: View {
         .padding(.bottom, 20)
     }
 }
-
-
-//
-//import SwiftUI
-//
-//struct DataEntryView: View {
-//    @EnvironmentObject var appDataStore: AppDataStorage
-//    @EnvironmentObject var firebaseManager: FirebaseManager
-//    @Environment(\.presentationMode) var presentationMode
-//    
-//    @State private var weight: String = ""
-//    @State private var reps: String = ""
-//    @State private var selectedUnit: String = "lb"
-//    
-//    let setIndex: Int
-//    let onSave: (Int, Double, Int, String) -> Void
-//    
-//    let formatter: NumberFormatter = {
-//        let formatter = NumberFormatter()
-//        formatter.numberStyle = .decimal
-//        return formatter
-//    }()
-//    
-//    var body: some View {
-//        VStack {
-//            Text("Log Set \(setIndex + 1)")
-//                .font(.headline)
-//                .padding()
-//            
-//            TextField("Weight", text: $weight)
-//                .keyboardType(.decimalPad)
-//                .textFieldStyle(RoundedBorderTextFieldStyle())
-//                .padding()
-//                .onChange(of: weight) { newValue in
-//                    // Ensure valid decimal format
-//                    weight = newValue.filter { "0123456789.".contains($0) }
-//                }
-//            
-//            TextField("Reps", text: $reps)
-//                .keyboardType(.numberPad)
-//                .textFieldStyle(RoundedBorderTextFieldStyle())
-//                .padding()
-//                .onChange(of: reps) { newValue in
-//                    // Ensure only digits are entered
-//                    reps = newValue.filter { "0123456789".contains($0) }
-//                }
-//            
-//            Picker("Unit", selection: $selectedUnit) {
-//                Text("lb").tag("lb")
-//                Text("kg").tag("kg")
-//            }
-//            .pickerStyle(SegmentedPickerStyle())
-//            .padding()
-//            
-//            Button("Save") {
-//                guard let weightValue = Double(weight), weightValue > 0,
-//                      let repsValue = Int(reps), repsValue > 0 else {
-//                    return  // Prevent invalid entries
-//                }
-//                
-//                // Pass the validated values back to the parent view
-//                onSave(setIndex, weightValue, repsValue, selectedUnit)
-//                
-//                // Dismiss keyboard and close view
-//                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-//                presentationMode.wrappedValue.dismiss()
-//            }
-//            .buttonStyle(.borderedProminent)
-//            .disabled(weight.isEmpty || reps.isEmpty) // Disable button if inputs are empty
-//            .padding()
-//        }
-//        .padding()
-//    }
-//}

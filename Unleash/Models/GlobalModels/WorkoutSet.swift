@@ -12,6 +12,7 @@ class WorkoutSet: Identifiable, ObservableObject {
     var weight: Double?
     var reps: Int?
     var unit: String?
+    var time: Int?
     var completed: Bool?
     
     init(setIndex: Int) {
@@ -19,14 +20,16 @@ class WorkoutSet: Identifiable, ObservableObject {
         self.weight = nil
         self.reps = nil
         self.unit = nil
+        self.time = nil
         self.completed = false
     }
     
-    init(setIndex: Int, weight: Double?, reps: Int?, unit: String?, completed: Bool?) {
+    init(setIndex: Int, weight: Double?, reps: Int?, unit: String?, time: Int?, completed: Bool?) {
         self.setIndex = setIndex
         self.weight = weight
         self.reps = reps
         self.unit = unit
+        self.time = time
         self.completed = completed
     }
 }
