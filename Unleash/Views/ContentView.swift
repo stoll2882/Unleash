@@ -14,17 +14,36 @@ struct ContentView: View {
     @EnvironmentObject var firebaseManager: FirebaseManager
     @EnvironmentObject var appDataStore: AppDataStorage
     @StateObject var authManager: AuthManager = AuthManager()
+    @StateObject var subscriptionManager = SubscriptionManager()
     
     var body: some View {
         VStack {
-            if authManager.isLoaded {
-                MainWelcomeView()
-            } else {
-                LoginView()
+            if subscriptionManager.subscriptionStatus == .subscribed || subscriptionManager.subscriptionStatus == .unknown {
+                // User has subscription or status is unknown (allow access while checking)
+                if authManager.isLoaded {
+                    MainWelcomeView()
+                } else {
+                    LoginView()
+                }
+            } else if subscriptionManager.subscriptionStatus == .notSubscribed {
+                // Show paywall if not subscribed
+                PaywallView()
+                    .environmentObject(subscriptionManager)
             }
         }
         .onAppear {
             authManager.startListening(appDataStore: appDataStore, firebaseManager: firebaseManager)
+            
+            #if DEBUG
+            // In debug mode, allow access without subscription checks initially
+            // This lets you develop other features before setting up App Store Connect
+            if ProcessInfo.processInfo.environment["DISABLE_SUBSCRIPTION_CHECK"] == "YES" {
+                // Dev mode enabled - skip subscription check
+                return
+            }
+            #endif
+            
+            subscriptionManager.checkSubscriptionStatus()
         }
         .onDisappear {
             authManager.stopListening()
